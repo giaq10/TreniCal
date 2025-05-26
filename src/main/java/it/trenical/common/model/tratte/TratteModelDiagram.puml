@@ -1,0 +1,51 @@
+@startuml
+package tratte {
+
+  ' Enumerazione TipoTreno
+  enum TipoTreno {
+    FRECCIAROSSA
+    INTERCITY
+    REGIONALE
+  }
+
+  ' Classe Stazione
+  class Stazione {
+    - String id
+    - String nome
+    - double latitudine
+    - double longitudine
+    + String getId()
+    + String getNome()
+    + double getLatitudine()
+    + double getLongitudine()
+    + void setLatitudine(double)
+    + void setLongitudine(double)
+  }
+
+  ' Classe Tratta
+  class Tratta {
+    - String codice
+    - Stazione partenza
+    - Stazione arrivo
+    - TipoTreno tipoTreno
+    - "java.time.LocalTime" orarioPartenza
+    - "java.time.LocalTime" orarioArrivo
+    + "java.time.Duration" getDurata()
+    + double getDistanza()
+    + void setTipoTreno(TipoTreno)
+  }
+
+  ' Classe GestoreTratte
+  class GestoreTratte {
+    - "java.util.List<Tratta>" tratte
+    + void aggiungiTratta(Tratta)
+    + void rimuoviTratta(Tratta)
+    + "java.util.List<Tratta>" cercaTratte(Stazione, Stazione)
+  }
+
+  ' Relazioni
+  Stazione "1" <-- "0..*" Tratta : partenza
+  Stazione "1" <-- "0..*" Tratta : arrivo
+  GestoreTratte o-- "0..*" Tratta : contiene
+}
+@enduml

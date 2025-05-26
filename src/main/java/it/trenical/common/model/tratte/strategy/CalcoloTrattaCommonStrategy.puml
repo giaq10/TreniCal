@@ -1,0 +1,43 @@
+@startuml
+package tratte {
+  class Tratta
+}
+
+package tratte.strategy {
+
+  interface CalcoloTrattaStrategy {
+    + int calcolaDurata(int distanzaKm)
+    + double calcolaPrezzo(int distanzaKm)
+  }
+
+  class CalcoloTrattaEconomy {
+    - static final double VELOCITA_BASE_KMH
+    - static final double PREZZO_BASE_PER_KM
+    + int calcolaDurata(int distanzaKm)
+    + double calcolaPrezzo(int distanzaKm)
+  }
+
+  class CalcoloTrattaStandard {
+    - CalcoloTrattaEconomy economyStrategy
+    + int calcolaDurata(int distanzaKm)
+    + double calcolaPrezzo(int distanzaKm)
+  }
+
+  class CalcoloTrattaBusiness {
+    - CalcoloTrattaEconomy economyStrategy
+    + int calcolaDurata(int distanzaKm)
+    + double calcolaPrezzo(int distanzaKm)
+  }
+}
+
+' Implementazioni del pattern Strategy
+CalcoloTrattaStrategy <|.. CalcoloTrattaEconomy
+CalcoloTrattaStrategy <|.. CalcoloTrattaStandard
+CalcoloTrattaStrategy <|.. CalcoloTrattaBusiness
+
+' Relazioni di composizione con CalcoloTrattaEconomy
+
+
+' Aggregazione di Tratta con la strategy
+Tratta o-- CalcoloTrattaStrategy
+@enduml

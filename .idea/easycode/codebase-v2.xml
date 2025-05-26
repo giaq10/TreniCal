@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="com.obiscr.chatgpt.settings.EasyCodeState">
+    <option name="projectFiles" value="$PROJECT_DIR$/src/main/java/it/trenical/common/model/biglietti/Biglietto.java;C:/Users/Utente/Desktop/TreniCal/src/main/java/it/trenical/common/model/tratte/Stazione.java;C:/Users/Utente/Desktop/TreniCal/src/main/java/it/trenical/common/model/treni/Treno.java;C:/Users/Utente/Desktop/TreniCal/src/main/java/it/trenical/common/strategy/CalcoloTrattaEconomy.java;C:/Users/Utente/Desktop/TreniCal/src/main/java/it/trenical/common/strategy/CalcoloTrattaStandard.java;C:/Users/Utente/Desktop/TreniCal/src/main/java/it/trenical/common/strategy/CalcoloTrattaStrategy.java;C:/Users/Utente/Desktop/TreniCal/src/main/proto/Trenical.proto;C:/Users/Utente/Desktop/TreniCal/README.md" />
+  </component>
+</project>
