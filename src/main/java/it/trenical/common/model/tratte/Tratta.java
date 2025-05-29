@@ -1,6 +1,7 @@
 package it.trenical.common.model.tratte;
 
 
+import it.trenical.common.model.stazioni.Stazione;
 import it.trenical.common.model.tratte.strategy.CalcoloTrattaBusiness;
 import it.trenical.common.model.tratte.strategy.CalcoloTrattaEconomy;
 import it.trenical.common.model.tratte.strategy.CalcoloTrattaStandard;

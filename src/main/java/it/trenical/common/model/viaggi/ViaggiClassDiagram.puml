@@ -1,0 +1,70 @@
+@startuml ViaggiModel
+title Diagramma classi del package it.trenical.common.model.viaggi
+
+package viaggi {
+  
+  enum StatoViaggio <<enumeration>> {
+    PROGRAMMATO
+    CONFERMATO
+    IN_VIAGGIO
+    RITARDO
+    ARRIVATO
+    CANCELLATO
+    --
+    + getDescrizione(): String
+    + isAttivo(): boolean
+    + isConcluso(): boolean
+  }
+
+  class Viaggio {
+    - id: String
+    - treno: Treno
+    - tratta: Tratta
+    - dataViaggio: LocalDate
+    - orarioPartenzaProgrammato: LocalTime
+    - orarioArrivoProgrammato: LocalTime
+    - orarioPartenzaEffettivo: LocalTime
+    - orarioArrivoEffettivo: LocalTime
+    - binarioPartenza: Binario
+    - postiDisponibili: int
+    - stato: StatoViaggio
+    - ritardoMinuti: int
+    - motivoCancellazione: String
+    --
+    + Viaggio(Treno, Tratta, LocalDate, LocalTime)
+    + Viaggio(Treno, Tratta, LocalDate, LocalTime, Binario, Binario)
+    + prenotaPosto(): boolean
+    + liberaPosto(): boolean
+    + hasPostiDisponibili(): boolean
+    + aggiornaStato(StatoViaggio): void
+    + cambioOrarioPartenza(LocalTime): void
+    + impostaRitardo(int): void
+    + cambioBinarioPartenza(Binario): void
+    + cancellaViaggio(String): void
+    + getId(): String
+    + getPrezzo(): double
+    + isDisponibile(): boolean
+    + isCancellato(): boolean
+    + haRitardo(): boolean
+    + hasCambioBinario(): boolean
+    + toString(): String
+  }
+
+  class ViaggioFactory {
+    + creaViaggio(Treno, Tratta, LocalDate, LocalTime): Viaggio
+    + creaViaggio(Treno, Tratta, LocalDate, LocalTime, Binario, Binario): Viaggio
+    + creaViaggioConBinarioAutomatico(Treno, Tratta, LocalDate, LocalTime): Viaggio
+    + filtraViaggi(List<Viaggio>, LocalTime, LocalTime, Double, boolean): List<Viaggio>
+    + isViaggioValido(Treno, Tratta, LocalDate, LocalTime): boolean
+  }
+
+}
+
+' relazioni con altri package
+Viaggio o-- StatoViaggio
+ViaggioFactory ..> Viaggio           : crea*
+Viaggio o-- Treno                    : treno
+Viaggio o-- Tratta                  : tratta
+Viaggio o-- Binario                 : binarioPartenza
+
+@enduml

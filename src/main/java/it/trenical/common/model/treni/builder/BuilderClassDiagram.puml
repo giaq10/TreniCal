@@ -1,0 +1,34 @@
+@startuml BuilderPackage
+title Diagramma delle classi nel package builder
+
+package builder {
+    class Builder {
+        - codice: String
+        - tipoTreno: TipoTreno
+        - postiTotali: int
+        - servizi: Set<ServizioTreno>
+        + codice(String): Builder
+        + tipo(TipoTreno): Builder
+        + postiTotali(int): Builder
+        + aggiungiServizio(ServizioTreno): Builder
+        + servizi(ServizioTreno...): Builder
+        + build(): Treno
+    }
+
+    class BuilderEconomy {
+        + BuilderEconomy()
+    }
+
+    class BuilderStandard {
+        + BuilderStandard()
+    }
+
+    class BuilderBusiness {
+        + BuilderBusiness()
+    }
+}
+
+Builder <|-- BuilderEconomy
+Builder <|-- BuilderStandard
+Builder <|-- BuilderBusiness
+@enduml

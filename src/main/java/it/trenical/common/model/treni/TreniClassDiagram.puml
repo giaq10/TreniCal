@@ -1,0 +1,53 @@
+@startuml TreniModel
+title Diagramma classi del modello Treni
+
+package treni {
+  
+  enum ServizioTreno <<enumeration>> {
+    ALTA_VELOCITA
+    RISTORAZIONE
+    WIFI
+    ARIA_CONDIZIONATA
+    PRESE_ELETTRICHE
+    SILENZIOSO
+    BUSINESS_LOUNGE
+  }
+
+  enum TipoTreno <<enumeration>> {
+    ECONOMY
+    STANDARD
+    BUSINESS
+    --
+    nome: String
+    postiStandard: int
+    velocitaMedia: double
+    --
+    + getNome(): String
+    + getPostiStandard(): int
+    + getVelocitaMedia(): double
+  }
+
+  class Treno {
+    - codice: String
+    - tipoTreno: TipoTreno
+    - postiTotali: int
+    - servizi: Set<ServizioTreno>
+    --
+    + Treno(codice, tipoTreno, postiTotali, servizi)
+    + getCodice(): String
+    + getTipoTreno(): TipoTreno
+    + getPostiTotali(): int
+    + getServizi(): Set<ServizioTreno>
+    + hasServizio(s: ServizioTreno): boolean
+    + toString(): String
+    + equals(Object): boolean
+    + hashCode(): int
+  }
+
+}
+
+' Relazioni
+Treno o-- TipoTreno        : tipo
+Treno o-- "0..*" ServizioTreno  : servizi
+
+@enduml

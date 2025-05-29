@@ -1,5 +1,6 @@
 package it.trenical.common.model.tratte;
 
+import it.trenical.common.model.stazioni.Stazione;
 import it.trenical.common.model.treni.TipoTreno;
 
 import java.util.ArrayList;

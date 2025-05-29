@@ -6,9 +6,9 @@ src/
 │   │           ├── client/
 │   │           │   ├── gui/
 │   │           │   ├── command/
-│   │           │   └── network/     (proxy client)
+│   │           │   └── network/     
 │   │           ├── common/
-│   │           │   ├── model/       (Biglietto, Treno, Tratta...)
+│   │           │   ├── model/       
 │   │           │   ├── dto/
 │   │           │   ├── observer/
 │   │           │   └── strategy/
@@ -16,7 +16,7 @@ src/
 │   │               ├── db/
 │   │               ├── controller/
 │   │               ├── notification/
-│   │               └── network/     (proxy remoto, listener gRPC)
+│   │               └── network/     
 │   ├── resources/
 │   └── proto/
 │       └── Trenical.proto
