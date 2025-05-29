@@ -1,6 +1,18 @@
 @startuml ViaggiModel
 title Diagramma classi del package it.trenical.common.model.viaggi
 
+' Definizione del package esterno contenente Binario
+package stazioni {
+  enum Binario <<enumeration>> {
+    BINARIO_1
+    BINARIO_2
+    BINARIO_3
+    --
+    + getNumero(): int
+    + getDescrizione(): String
+  }
+}
+
 package viaggi {
   
   enum StatoViaggio <<enumeration>> {
@@ -25,21 +37,21 @@ package viaggi {
     - orarioArrivoProgrammato: LocalTime
     - orarioPartenzaEffettivo: LocalTime
     - orarioArrivoEffettivo: LocalTime
-    - binarioPartenza: Binario
+    - binarioPartenza: stazioni.Binario
     - postiDisponibili: int
     - stato: StatoViaggio
     - ritardoMinuti: int
     - motivoCancellazione: String
     --
     + Viaggio(Treno, Tratta, LocalDate, LocalTime)
-    + Viaggio(Treno, Tratta, LocalDate, LocalTime, Binario, Binario)
+    + Viaggio(Treno, Tratta, LocalDate, LocalTime, stazioni.Binario, stazioni.Binario)
     + prenotaPosto(): boolean
     + liberaPosto(): boolean
     + hasPostiDisponibili(): boolean
     + aggiornaStato(StatoViaggio): void
     + cambioOrarioPartenza(LocalTime): void
     + impostaRitardo(int): void
-    + cambioBinarioPartenza(Binario): void
+    + cambioBinarioPartenza(stazioni.Binario): void
     + cancellaViaggio(String): void
     + getId(): String
     + getPrezzo(): double
@@ -52,7 +64,7 @@ package viaggi {
 
   class ViaggioFactory {
     + creaViaggio(Treno, Tratta, LocalDate, LocalTime): Viaggio
-    + creaViaggio(Treno, Tratta, LocalDate, LocalTime, Binario, Binario): Viaggio
+    + creaViaggio(Treno, Tratta, LocalDate, LocalTime, stazioni.Binario, stazioni.Binario): Viaggio
     + creaViaggioConBinarioAutomatico(Treno, Tratta, LocalDate, LocalTime): Viaggio
     + filtraViaggi(List<Viaggio>, LocalTime, LocalTime, Double, boolean): List<Viaggio>
     + isViaggioValido(Treno, Tratta, LocalDate, LocalTime): boolean
@@ -63,8 +75,8 @@ package viaggi {
 ' relazioni con altri package
 Viaggio o-- StatoViaggio
 ViaggioFactory ..> Viaggio           : crea*
-Viaggio o-- Treno                    : treno
-Viaggio o-- Tratta                  : tratta
-Viaggio o-- Binario                 : binarioPartenza
+Viaggio o-- treni.Treno                    : treno
+Viaggio o-- tratte.Tratta                  : tratta
+Viaggio o-- stazioni.Binario         : binarioPartenza
 
 @enduml

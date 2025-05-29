@@ -1,0 +1,62 @@
+@startuml UnifiedTratteStrategyModel
+title Diagramma unificato: strategy + Tratta + Factory
+
+package tratte.strategy {
+  interface CalcoloTrattaStrategy {
+    + calcolaDurata(distanzaKm: int): int
+    + calcolaPrezzo(distanzaKm: int): double
+  }
+
+  class CalcoloTrattaEconomy {
+    - VELOCITA_BASE_KMH: double
+    - PREZZO_BASE_PER_KM: double
+    + calcolaDurata(int): int
+    + calcolaPrezzo(int): double
+  }
+
+  class CalcoloTrattaStandard {
+    - economyStrategy: CalcoloTrattaEconomy
+    + calcolaDurata(int): int
+    + calcolaPrezzo(int): double
+  }
+
+  class CalcoloTrattaBusiness {
+    - economyStrategy: CalcoloTrattaEconomy
+    + calcolaDurata(int): int
+    + calcolaPrezzo(int): double
+  }
+
+  CalcoloTrattaStrategy <|.. CalcoloTrattaEconomy
+  CalcoloTrattaStrategy <|.. CalcoloTrattaStandard
+  CalcoloTrattaStrategy <|.. CalcoloTrattaBusiness
+  CalcoloTrattaStandard ..> CalcoloTrattaEconomy : usa
+  CalcoloTrattaBusiness ..> CalcoloTrattaEconomy : usa
+}
+
+package tratte {
+  class Tratta {
+    - stazionePartenza: Stazione
+    - stazioneArrivo: Stazione
+    - distanzaKm: int
+    - tipoTreno: TipoTreno
+    - durataMinuti: int
+    - prezzo: double
+    + Tratta(Stazione, Stazione, TipoTreno)
+    + getDurataMinuti(): int
+    + getPrezzo(): double
+  }
+
+  class TrattaFactory {
+    + creaTratta(partenza: Stazione, arrivo: Stazione, tipo: TipoTreno): Tratta
+    + creaTratta(partenza: String, arrivo: String, tipo: String): Tratta
+    + creaTutteLeTratte(partenza: Stazione, arrivo: Stazione): List<Tratta>
+    + isTrattaValida(partenza: Stazione, arrivo: Stazione): boolean
+  }
+
+  Tratta ..> CalcoloTrattaStrategy : usa
+  TrattaFactory ..> Tratta : crea
+  Tratta ..> stazioni.Stazione
+  Tratta ..> treni.TipoTreno
+}
+
+@enduml
