@@ -1,0 +1,25 @@
+src/
+├── main/
+│   ├── java/
+│   │   └── it/
+│   │       └── trenical/
+│   │           ├── client/
+│   │           │   ├── gui/
+│   │           │   ├── command/
+│   │           │   └── network/     (proxy client)
+│   │           ├── common/
+│   │           │   ├── model/       (Biglietto, Treno, Tratta...)
+│   │           │   ├── dto/
+│   │           │   ├── observer/
+│   │           │   └── strategy/
+│   │           └── server/
+│   │               ├── db/
+│   │               ├── controller/
+│   │               ├── notification/
+│   │               └── network/     (proxy remoto, listener gRPC)
+│   ├── resources/
+│   └── proto/
+│       └── Trenical.proto
+├── test/
+│   └── java/
+│       └── it.trenical...
