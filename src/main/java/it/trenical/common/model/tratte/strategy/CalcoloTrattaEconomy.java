@@ -10,14 +10,13 @@ public class CalcoloTrattaEconomy implements CalcoloTrattaStrategy {
         // Calcolo base della durata
         double durataOre = distanzaKm / VELOCITA_BASE_KMH;
         double variazione = 1.0 + ((Math.random() * 0.2) - 0.1);
-        return (int) Math.round(durataOre * variazione * 60); // conversione in minuti
+        return (int) Math.round(durataOre * variazione * 60);
     }
-
     @Override
     public double calcolaPrezzo(int distanzaKm) {
         // Prezzo base
         double prezzoBase = distanzaKm * PREZZO_BASE_PER_KM;
         double variazione = 1.0 + ((Math.random() * 0.3) - 0.15);
-        return Math.round(prezzoBase * variazione * 100.0) / 100.0; // arrotondamento a 2 decimali
+        return Math.round(prezzoBase * variazione * 100.0) / 100.0;
     }
 }

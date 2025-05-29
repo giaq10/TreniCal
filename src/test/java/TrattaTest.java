@@ -1,4 +1,5 @@
 
+import it.trenical.common.model.stazioni.Stazione;
 import it.trenical.common.model.tratte.*;
 import it.trenical.common.model.treni.TipoTreno;
 import org.junit.jupiter.api.*;
@@ -62,8 +63,8 @@ class TrattaTest {
     void testTuttiTipiTreno() {
         System.out.println("=== TEST CONFRONTO TUTTI I TIPI DI TRENO ===");
 
-        Stazione partenza = Stazione.REGGIO_CALABRIA;
-        Stazione arrivo = Stazione.VENEZIA;
+        Stazione partenza = Stazione.ROMA;
+        Stazione arrivo = Stazione.NAPOLI;
 
         System.out.println("Tratta fissa: " + partenza.getNome() + " → " + arrivo.getNome());
         System.out.println("Differenza valori stazioni: " + Math.abs(partenza.getValore() - arrivo.getValore()));
