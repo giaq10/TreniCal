@@ -25,7 +25,6 @@ class ViaggioTest {
     private Treno trenoBusiness;
     private Tratta tratta;
     private LocalDate dataViaggio;
-    private LocalTime orarioPartenza;
 
     @BeforeEach
     void setUp() {
@@ -35,7 +34,6 @@ class ViaggioTest {
         trenoBusiness = director.costruisciTrenoBusiness("BS001");
         tratta = new Tratta(Stazione.REGGIO_CALABRIA, Stazione.BOLOGNA);
         dataViaggio = LocalDate.of(2025, 6, 15);
-        orarioPartenza = LocalTime.of(9, 30);
     }
 
     // ===== TEST CREAZIONE VIAGGIO CON I 3 TIPI DI TRENO =====
@@ -44,7 +42,7 @@ class ViaggioTest {
     @DisplayName("Creazione Viaggio con Treno Economy")
     void testCreazioneViaggioEconomy() {
         // Act
-        Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio, orarioPartenza);
+        Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio);
 
         // Print
         System.out.println("\n=== TEST VIAGGIO ECONOMY ===");
@@ -57,6 +55,7 @@ class ViaggioTest {
         System.out.println("Binario: " + viaggio.getInfoBinari());
         System.out.println("Partenza: " + viaggio.getDataOraPartenzaFormattata());
         System.out.println("Arrivo: " + viaggio.getDataOraArrivoFormattata());
+        System.out.println("Orario generato: " + viaggio.getOrarioPartenza());
 
         // Assert
         assertNotNull(viaggio);
@@ -65,7 +64,8 @@ class ViaggioTest {
         assertEquals(TipoTreno.ECONOMY, viaggio.getTreno().getTipoTreno());
         assertEquals(tratta, viaggio.getTratta());
         assertEquals(dataViaggio, viaggio.getDataViaggio());
-        assertEquals(orarioPartenza, viaggio.getOrarioPartenza());
+        // Verifica che l'orario sia uno di quelli disponibili
+        assertTrue(Viaggio.getOrariDisponibili().contains(viaggio.getOrarioPartenza()));
         assertEquals(450, viaggio.getPostiDisponibili());
         assertTrue(viaggio.getPrezzo() > 0);
         assertTrue(viaggio.getDurataMinuti() > 0);
@@ -76,7 +76,7 @@ class ViaggioTest {
     @DisplayName("Creazione Viaggio con Treno Standard")
     void testCreazioneViaggioStandard() {
         // Act
-        Viaggio viaggio = new Viaggio(trenoStandard, tratta, dataViaggio, orarioPartenza);
+        Viaggio viaggio = new Viaggio(trenoStandard, tratta, dataViaggio);
 
         // Print
         System.out.println("\n=== TEST VIAGGIO STANDARD ===");
@@ -89,6 +89,7 @@ class ViaggioTest {
         System.out.println("Binario: " + viaggio.getInfoBinari());
         System.out.println("Partenza: " + viaggio.getDataOraPartenzaFormattata());
         System.out.println("Arrivo: " + viaggio.getDataOraArrivoFormattata());
+        System.out.println("Orario generato: " + viaggio.getOrarioPartenza());
 
         // Assert
         assertNotNull(viaggio);
@@ -97,13 +98,15 @@ class ViaggioTest {
         assertEquals(350, viaggio.getPostiDisponibili());
         assertTrue(viaggio.getPrezzo() > 0);
         assertTrue(viaggio.getDurataMinuti() > 0);
+        // Verifica orario valido
+        assertTrue(Viaggio.getOrariDisponibili().contains(viaggio.getOrarioPartenza()));
     }
 
     @Test
     @DisplayName("Creazione Viaggio con Treno Business")
     void testCreazioneViaggioBusiness() {
         // Act
-        Viaggio viaggio = new Viaggio(trenoBusiness, tratta, dataViaggio, orarioPartenza);
+        Viaggio viaggio = new Viaggio(trenoBusiness, tratta, dataViaggio);
 
         // Print
         System.out.println("\n=== TEST VIAGGIO BUSINESS ===");
@@ -116,6 +119,7 @@ class ViaggioTest {
         System.out.println("Binario: " + viaggio.getInfoBinari());
         System.out.println("Partenza: " + viaggio.getDataOraPartenzaFormattata());
         System.out.println("Arrivo: " + viaggio.getDataOraArrivoFormattata());
+        System.out.println("Orario generato: " + viaggio.getOrarioPartenza());
 
         // Assert
         assertNotNull(viaggio);
@@ -124,6 +128,46 @@ class ViaggioTest {
         assertEquals(250, viaggio.getPostiDisponibili());
         assertTrue(viaggio.getPrezzo() > 0);
         assertTrue(viaggio.getDurataMinuti() > 0);
+        // Verifica orario valido
+        assertTrue(Viaggio.getOrariDisponibili().contains(viaggio.getOrarioPartenza()));
+    }
+
+    // ===== TEST ORARI DISPONIBILI =====
+
+    @Test
+    @DisplayName("Test lista orari disponibili")
+    void testOrariDisponibili() {
+        // Act
+        var orariDisponibili = Viaggio.getOrariDisponibili();
+
+        // Print
+        System.out.println("\n=== TEST ORARI DISPONIBILI ===");
+        System.out.println("Numero orari disponibili: " + orariDisponibili.size());
+        System.out.println("Orari disponibili:");
+        orariDisponibili.forEach(orario -> System.out.println("  " + orario));
+
+        // Assert
+        assertEquals(12, orariDisponibili.size());
+        assertTrue(orariDisponibili.contains(LocalTime.of(4, 0)));
+        assertTrue(orariDisponibili.contains(LocalTime.of(22, 0)));
+        assertTrue(orariDisponibili.contains(LocalTime.of(7, 30)));
+        assertTrue(orariDisponibili.contains(LocalTime.of(15, 30)));
+    }
+
+    @Test
+    @DisplayName("Test generazione orari casuali diversi")
+    void testGenerazioneOrariCasuali() {
+        // Arrange & Act - Crea molti viaggi per vedere la varietà degli orari
+        System.out.println("\n=== TEST GENERAZIONE ORARI CASUALI ===");
+
+        for (int i = 0; i < 10; i++) {
+            Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio);
+            System.out.println("Viaggio " + (i+1) + " - Orario: " + viaggio.getOrarioPartenza() +
+                    " - Binario: " + viaggio.getBinarioPartenza().getNumero());
+
+            // Assert - Ogni viaggio deve avere un orario valido
+            assertTrue(Viaggio.getOrariDisponibili().contains(viaggio.getOrarioPartenza()));
+        }
     }
 
     // ===== TEST STRATEGY PATTERN =====
@@ -132,9 +176,9 @@ class ViaggioTest {
     @DisplayName("Strategy Pattern: Business più costoso di Standard, Standard più costoso di Economy")
     void testStrategyPrezziCorretti() {
         // Arrange
-        Viaggio viaggioEconomy = new Viaggio(trenoEconomy, tratta, dataViaggio, orarioPartenza);
-        Viaggio viaggioStandard = new Viaggio(trenoStandard, tratta, dataViaggio, orarioPartenza);
-        Viaggio viaggioBusiness = new Viaggio(trenoBusiness, tratta, dataViaggio, orarioPartenza);
+        Viaggio viaggioEconomy = new Viaggio(trenoEconomy, tratta, dataViaggio);
+        Viaggio viaggioStandard = new Viaggio(trenoStandard, tratta, dataViaggio);
+        Viaggio viaggioBusiness = new Viaggio(trenoBusiness, tratta, dataViaggio);
 
         // Print
         System.out.println("\n=== TEST STRATEGY PATTERN - PREZZI ===");
@@ -155,9 +199,9 @@ class ViaggioTest {
     @DisplayName("Strategy Pattern: Business più veloce di Standard, Standard più veloce di Economy")
     void testStrategyDurateCorrette() {
         // Arrange
-        Viaggio viaggioEconomy = new Viaggio(trenoEconomy, tratta, dataViaggio, orarioPartenza);
-        Viaggio viaggioStandard = new Viaggio(trenoStandard, tratta, dataViaggio, orarioPartenza);
-        Viaggio viaggioBusiness = new Viaggio(trenoBusiness, tratta, dataViaggio, orarioPartenza);
+        Viaggio viaggioEconomy = new Viaggio(trenoEconomy, tratta, dataViaggio);
+        Viaggio viaggioStandard = new Viaggio(trenoStandard, tratta, dataViaggio);
+        Viaggio viaggioBusiness = new Viaggio(trenoBusiness, tratta, dataViaggio);
 
         // Print
         System.out.println("\n=== TEST STRATEGY PATTERN - DURATE ===");
@@ -182,13 +226,16 @@ class ViaggioTest {
     void testStrategyFactory() {
         // Act & Assert
         CalcoloViaggioStrategy economyStrategy = StrategyFactory.getStrategy(TipoTreno.ECONOMY);
-        System.out.println(economyStrategy);
+        System.out.println("\n=== TEST STRATEGY FACTORY ===");
+        System.out.println("Economy Strategy: " + economyStrategy.getClass().getSimpleName());
         assertTrue(economyStrategy instanceof CalcoloViaggioEconomy);
 
         CalcoloViaggioStrategy standardStrategy = StrategyFactory.getStrategy(TipoTreno.STANDARD);
+        System.out.println("Standard Strategy: " + standardStrategy.getClass().getSimpleName());
         assertTrue(standardStrategy instanceof CalcoloViaggioStandard);
 
         CalcoloViaggioStrategy businessStrategy = StrategyFactory.getStrategy(TipoTreno.BUSINESS);
+        System.out.println("Business Strategy: " + businessStrategy.getClass().getSimpleName());
         assertTrue(businessStrategy instanceof CalcoloViaggioBusiness);
     }
 
@@ -198,7 +245,7 @@ class ViaggioTest {
     @DisplayName("Prenotazione e liberazione posti")
     void testGestionePosti() {
         // Arrange
-        Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio, orarioPartenza);
+        Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio);
         int postiIniziali = viaggio.getPostiDisponibili();
 
         // Print
@@ -227,7 +274,7 @@ class ViaggioTest {
     @DisplayName("Gestione stato viaggio")
     void testGestioneStato() {
         // Arrange
-        Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio, orarioPartenza);
+        Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio);
 
         // Print
         System.out.println("\n=== TEST GESTIONE STATO ===");
@@ -254,7 +301,7 @@ class ViaggioTest {
     @DisplayName("Gestione ritardi")
     void testGestioneRitardi() {
         // Arrange
-        Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio, orarioPartenza);
+        Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio);
         LocalTime orarioArrivoOriginale = viaggio.getOrarioArrivo();
 
         // Print
@@ -284,15 +331,21 @@ class ViaggioTest {
     @Test
     @DisplayName("Creazione viaggio con parametri null deve lanciare eccezione")
     void testCreazioneViaggioParametriNull() {
+        // Print
+        System.out.println("\n=== TEST VALIDAZIONE PARAMETRI ===");
+
         // Assert
-        log.error("e: ", assertThrows(IllegalArgumentException.class,
-                () -> new Viaggio(null, tratta, dataViaggio, orarioPartenza)));
-        log.error("e: ",assertThrows(IllegalArgumentException.class,
-                () -> new Viaggio(trenoEconomy, null, dataViaggio, orarioPartenza)));
-        log.error("e: ",assertThrows(IllegalArgumentException.class,
-                () -> new Viaggio(trenoEconomy, tratta, null, orarioPartenza)));
-        log.error("e: ",assertThrows(IllegalArgumentException.class,
-                () -> new Viaggio(trenoEconomy, tratta, dataViaggio, null)));
+        Exception e1 = assertThrows(IllegalArgumentException.class,
+                () -> new Viaggio(null, tratta, dataViaggio));
+        System.out.println("Eccezione treno null: " + e1.getMessage());
+
+        Exception e2 = assertThrows(IllegalArgumentException.class,
+                () -> new Viaggio(trenoEconomy, null, dataViaggio));
+        System.out.println("Eccezione tratta null: " + e2.getMessage());
+
+        Exception e3 = assertThrows(IllegalArgumentException.class,
+                () -> new Viaggio(trenoEconomy, tratta, null));
+        System.out.println("Eccezione data null: " + e3.getMessage());
     }
 
     // ===== TEST METODI UTILITY =====
@@ -301,24 +354,26 @@ class ViaggioTest {
     @DisplayName("Test metodi formattazione date e durate")
     void testMetodiFormattazione() {
         // Arrange
-        Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio, orarioPartenza);
-        String vi = viaggio.toString();
-        System.out.println(vi);
+        Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio);
+
+        // Print
+        System.out.println("\n=== TEST FORMATTAZIONE ===");
+        System.out.println("Viaggio completo: " + viaggio.toString());
 
         // Act & Assert
         String durataFormattata = viaggio.getDurataFormattata();
-        System.out.println(durataFormattata);
+        System.out.println("Durata formattata: " + durataFormattata);
         assertNotNull(durataFormattata);
         assertTrue(durataFormattata.contains("h"));
         assertTrue(durataFormattata.contains("m"));
 
         String dataPartenza = viaggio.getDataOraPartenzaFormattata();
-        System.out.println(dataPartenza);
+        System.out.println("Data partenza formattata: " + dataPartenza);
         assertTrue(dataPartenza.contains("15/06/2025"));
-        assertTrue(dataPartenza.contains("09:30"));
+        assertTrue(dataPartenza.contains("alle"));
 
         String infoBinari = viaggio.getInfoBinari();
-        System.out.println(infoBinari);
+        System.out.println("Info binari: " + infoBinari);
         assertTrue(infoBinari.startsWith("Binario"));
     }
 
@@ -326,18 +381,48 @@ class ViaggioTest {
     @DisplayName("Test LocalDateTime getters")
     void testLocalDateTimeGetters() {
         // Arrange
-        Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio, orarioPartenza);
-        System.out.println(viaggio);
+        Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio);
+
+        // Print
+        System.out.println("\n=== TEST LOCAL DATE TIME ===");
+        System.out.println("Viaggio: " + viaggio.getId());
 
         // Act & Assert
         LocalDateTime dataOraPartenza = viaggio.getDataOraPartenza();
-        System.out.println(dataOraPartenza);
+        System.out.println("Data/ora partenza: " + dataOraPartenza);
         assertEquals(dataViaggio, dataOraPartenza.toLocalDate());
-        assertEquals(orarioPartenza, dataOraPartenza.toLocalTime());
+        assertTrue(Viaggio.getOrariDisponibili().contains(dataOraPartenza.toLocalTime()));
 
         LocalDateTime dataOraArrivo = viaggio.getDataOraArrivo();
-        System.out.println(dataOraArrivo);
-        assertEquals(dataViaggio, dataOraArrivo.toLocalDate());
-        assertTrue(dataOraArrivo.toLocalTime().isAfter(orarioPartenza));
+        System.out.println("Data/ora arrivo: " + dataOraArrivo);
+
+        assertTrue(dataOraArrivo.toLocalDate().equals(dataViaggio) ||
+                        dataOraArrivo.toLocalDate().equals(dataViaggio.plusDays(1)),
+                "La data di arrivo deve essere lo stesso giorno o il giorno successivo");
+        assertTrue(dataOraArrivo.isAfter(dataOraPartenza),
+                "L'orario di arrivo deve essere successivo a quello di partenza");
+        long minutiEffettivi = java.time.Duration.between(dataOraPartenza, dataOraArrivo).toMinutes();
+        assertEquals(viaggio.getDurataMinuti(), minutiEffettivi,
+                "La durata calcolata deve corrispondere a quella del viaggio");
+    }
+
+    @Test
+    @DisplayName("Test ID univoci per viaggi diversi")
+    void testIdUnivoci() {
+        // Arrange & Act
+        Viaggio viaggio1 = new Viaggio(trenoEconomy, tratta, dataViaggio);
+        Viaggio viaggio2 = new Viaggio(trenoStandard, tratta, dataViaggio);
+        Viaggio viaggio3 = new Viaggio(trenoEconomy, tratta, dataViaggio.plusDays(1));
+
+        // Print
+        System.out.println("\n=== TEST ID UNIVOCI ===");
+        System.out.println("ID Viaggio 1: " + viaggio1.getId());
+        System.out.println("ID Viaggio 2: " + viaggio2.getId());
+        System.out.println("ID Viaggio 3: " + viaggio3.getId());
+
+        // Assert
+        assertNotEquals(viaggio1.getId(), viaggio2.getId());
+        assertNotEquals(viaggio1.getId(), viaggio3.getId());
+        assertNotEquals(viaggio2.getId(), viaggio3.getId());
     }
 }

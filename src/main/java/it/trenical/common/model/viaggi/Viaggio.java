@@ -9,15 +9,33 @@ import it.trenical.common.model.viaggi.strategy.StrategyFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 public class Viaggio {
+    private static final List<LocalTime> ORARI_PARTENZA_DISPONIBILI = Arrays.asList(
+            LocalTime.of(4, 0),   // 04:00
+            LocalTime.of(6, 0),   // 06:00
+            LocalTime.of(8, 0),   // 08:00
+            LocalTime.of(10, 0),  // 10:00
+            LocalTime.of(12, 0),  // 12:00
+            LocalTime.of(14, 0),  // 14:00
+            LocalTime.of(16, 0),  // 16:00
+            LocalTime.of(18, 0),  // 18:00
+            LocalTime.of(20, 0),  // 20:00
+            LocalTime.of(22, 0),  // 22:00
+            LocalTime.of(7, 30),  // 07:30
+            LocalTime.of(15, 30)  // 15:30
+    );
+
     private final String id;
     private final Treno treno;
     private final Tratta tratta;
     private final LocalDate dataViaggio;
     private final LocalTime orarioPartenzaProgrammato;
     private final LocalTime orarioArrivoProgrammato;
+    private final LocalDate dataArrivoProgrammata;
     private final Binario binarioPartenza;
 
     private final double prezzo;
@@ -25,37 +43,50 @@ public class Viaggio {
 
     private LocalTime orarioPartenzaEffettivo;
     private LocalTime orarioArrivoEffettivo;
+    private LocalDate dataArrivoEffettiva;
     private int postiDisponibili;
     private StatoViaggio stato;
     private int ritardoMinuti;
     private String motivoCancellazione;
 
-    public Viaggio(Treno treno, Tratta tratta, LocalDate dataViaggio, LocalTime orarioPartenza) {
+    public Viaggio(Treno treno, Tratta tratta, LocalDate dataViaggio) {
         if (treno == null) throw new IllegalArgumentException("Treno obbligatorio");
         if (tratta == null) throw new IllegalArgumentException("Tratta obbligatoria");
         if (dataViaggio == null) throw new IllegalArgumentException("Data viaggio obbligatoria");
-        if (orarioPartenza == null) throw new IllegalArgumentException("Orario partenza obbligatorio");
 
         this.treno = treno;
         this.tratta = tratta;
         this.dataViaggio = dataViaggio;
-        this.orarioPartenzaProgrammato = orarioPartenza;
 
+        this.orarioPartenzaProgrammato = generaOrarioRandom();
         this.binarioPartenza = generaBinarioRandom();
 
         CalcoloViaggioStrategy strategy = StrategyFactory.getStrategy(treno.getTipoTreno());
         this.durataMinuti = strategy.calcolaDurata(tratta.getDistanzaKm(), treno.getTipoTreno());
         this.prezzo = strategy.calcolaPrezzo(tratta.getDistanzaKm(), treno.getTipoTreno());
 
-        this.orarioArrivoProgrammato = orarioPartenza.plusMinutes(durataMinuti);
+        LocalDateTime dataOraArrivo = calcolaDataOraArrivo(dataViaggio, orarioPartenzaProgrammato, durataMinuti);
+        this.orarioArrivoProgrammato = dataOraArrivo.toLocalTime();
+        this.dataArrivoProgrammata = dataOraArrivo.toLocalDate();
 
         this.id = generaIdUnico();
 
-        this.orarioPartenzaEffettivo = orarioPartenza;
-        this.orarioArrivoEffettivo = this.orarioArrivoProgrammato;
+        this.orarioPartenzaEffettivo = orarioPartenzaProgrammato;
+        this.orarioArrivoEffettivo = orarioArrivoProgrammato;
+        this.dataArrivoEffettiva = dataArrivoProgrammata;
         this.postiDisponibili = treno.getPostiTotali();
         this.stato = StatoViaggio.PROGRAMMATO;
         this.ritardoMinuti = 0;
+    }
+
+    private LocalDateTime calcolaDataOraArrivo(LocalDate dataPartenza, LocalTime orarioPartenza, int durataMinuti) {
+        LocalDateTime dataOraPartenza = LocalDateTime.of(dataPartenza, orarioPartenza);
+        return dataOraPartenza.plusMinutes(durataMinuti);
+    }
+
+    private LocalTime generaOrarioRandom() {
+        int index = (int) (Math.random() * ORARI_PARTENZA_DISPONIBILI.size());
+        return ORARI_PARTENZA_DISPONIBILI.get(index);
     }
 
     private Binario generaBinarioRandom() {
@@ -74,6 +105,10 @@ public class Viaggio {
                 binarioPartenza.name());
         int hash = Math.abs(hashInput.hashCode());
         return String.format("V%08d", hash % 100000000);
+    }
+
+    public static List<LocalTime> getOrariDisponibili() {
+        return ORARI_PARTENZA_DISPONIBILI;
     }
 
     public boolean prenotaPosto() {
@@ -102,19 +137,21 @@ public class Viaggio {
 
     public void cambioOrarioPartenza(LocalTime nuovoOrario) {
         this.orarioPartenzaEffettivo = nuovoOrario;
-        // Ricalcola automaticamente l'orario di arrivo mantenendo la durata
-        this.orarioArrivoEffettivo = nuovoOrario.plusMinutes(durataMinuti);
+        LocalDateTime nuovaDataOraArrivo = calcolaDataOraArrivo(dataViaggio, nuovoOrario, durataMinuti);
+        this.orarioArrivoEffettivo = nuovaDataOraArrivo.toLocalTime();
+        this.dataArrivoEffettiva = nuovaDataOraArrivo.toLocalDate();
     }
 
     public void impostaRitardo(int minuti) {
         this.ritardoMinuti = minuti;
         if (minuti > 0) {
             this.stato = StatoViaggio.RITARDO;
-            // Il ritardo si applica all'orario di arrivo
-            this.orarioArrivoEffettivo = this.orarioArrivoProgrammato.plusMinutes(minuti);
+            LocalDateTime dataOraArrivoConRitardo = LocalDateTime.of(dataArrivoProgrammata, orarioArrivoProgrammato).plusMinutes(minuti);
+            this.orarioArrivoEffettivo = dataOraArrivoConRitardo.toLocalTime();
+            this.dataArrivoEffettiva = dataOraArrivoConRitardo.toLocalDate();
         } else {
-            // Ritardo azzerato
-            this.orarioArrivoEffettivo = this.orarioArrivoProgrammato;
+            this.orarioArrivoEffettivo = orarioArrivoProgrammato;
+            this.dataArrivoEffettiva = dataArrivoProgrammata;
         }
     }
 
@@ -129,8 +166,10 @@ public class Viaggio {
     public LocalDate getDataViaggio() { return dataViaggio; }
     public LocalTime getOrarioPartenza() { return orarioPartenzaProgrammato; }
     public LocalTime getOrarioArrivo() { return orarioArrivoProgrammato; }
+    public LocalDate getDataArrivo() { return dataArrivoProgrammata; }
     public LocalTime getOrarioPartenzaEffettivo() { return orarioPartenzaEffettivo; }
     public LocalTime getOrarioArrivoEffettivo() { return orarioArrivoEffettivo; }
+    public LocalDate getDataArrivoEffettiva() { return dataArrivoEffettiva; }
     public Binario getBinarioPartenza() { return binarioPartenza; }
 
     public double getPrezzo() { return prezzo; }
@@ -147,7 +186,7 @@ public class Viaggio {
     }
 
     public LocalDateTime getDataOraArrivo() {
-        return LocalDateTime.of(dataViaggio, orarioArrivoProgrammato);
+        return LocalDateTime.of(dataArrivoProgrammata, orarioArrivoProgrammato);
     }
 
     public LocalDateTime getDataOraPartenzaEffettiva() {
@@ -155,7 +194,7 @@ public class Viaggio {
     }
 
     public LocalDateTime getDataOraArrivoEffettiva() {
-        return LocalDateTime.of(dataViaggio, orarioArrivoEffettivo);
+        return LocalDateTime.of(dataArrivoEffettiva, orarioArrivoEffettivo);
     }
 
     public boolean isDisponibile() {
@@ -187,9 +226,9 @@ public class Viaggio {
 
     public String getDataOraArrivoFormattata() {
         return String.format("%02d/%02d/%d alle %02d:%02d",
-                dataViaggio.getDayOfMonth(),
-                dataViaggio.getMonthValue(),
-                dataViaggio.getYear(),
+                dataArrivoEffettiva.getDayOfMonth(),
+                dataArrivoEffettiva.getMonthValue(),
+                dataArrivoEffettiva.getYear(),
                 orarioArrivoEffettivo.getHour(),
                 orarioArrivoEffettivo.getMinute());
     }
