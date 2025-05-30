@@ -2,33 +2,21 @@ package it.trenical.common.model.tratte;
 
 
 import it.trenical.common.model.stazioni.Stazione;
-import it.trenical.common.model.tratte.strategy.CalcoloTrattaBusiness;
-import it.trenical.common.model.tratte.strategy.CalcoloTrattaEconomy;
-import it.trenical.common.model.tratte.strategy.CalcoloTrattaStandard;
-import it.trenical.common.model.tratte.strategy.CalcoloTrattaStrategy;
-import it.trenical.common.model.treni.TipoTreno;
+import java.util.Objects;
 
 public class Tratta {
     private final Stazione stazionePartenza;
     private final Stazione stazioneArrivo;
     private final int distanzaKm;
-    private final TipoTreno tipoTreno;
-    private final int durataMinuti;
-    private final double prezzo;
 
-    public Tratta(Stazione stazionePartenza, Stazione stazioneArrivo, TipoTreno tipoTreno) {
-        if (stazionePartenza.equals(stazioneArrivo)) {
-            throw new IllegalArgumentException("Stazione di partenza e arrivo non possono essere uguali");
-        }
+    public Tratta(Stazione stazionePartenza, Stazione stazioneArrivo) {
+        if (stazionePartenza == null) throw new IllegalArgumentException("Stazione di partenza obbligatoria");
+        if (stazioneArrivo == null) throw new IllegalArgumentException("Stazione di arrivo obbligatoria");
+        if (stazionePartenza.equals(stazioneArrivo))throw new IllegalArgumentException("Stazione di partenza e arrivo non possono essere uguali");
         this.stazionePartenza = stazionePartenza;
         this.stazioneArrivo = stazioneArrivo;
-        this.tipoTreno = tipoTreno;
         // Calcolo della distanza in base alla differenza dei valori delle stazioni
         this.distanzaKm = calcolaDistanza();
-        // Uso della Strategy per calcolare durata e prezzo
-        CalcoloTrattaStrategy strategy = getStrategy(tipoTreno);
-        this.durataMinuti = strategy.calcolaDurata(distanzaKm);
-        this.prezzo = strategy.calcolaPrezzo(distanzaKm);
     }
 
     private int calcolaDistanza() {
@@ -38,51 +26,25 @@ public class Tratta {
         return Math.max(50, (differenzaValori * baseKmPerUnita) + variazione);
     }
 
-    private CalcoloTrattaStrategy getStrategy(TipoTreno tipo) {
-        switch (tipo) {
-            case ECONOMY:
-                return new CalcoloTrattaEconomy();
-            case STANDARD:
-                return new CalcoloTrattaStandard();
-            case BUSINESS:
-                return new CalcoloTrattaBusiness();
-            default:
-                throw new IllegalArgumentException("Tipo treno non supportato: " + tipo);
-        }
-    }
-
     public Stazione getStazionePartenza() {return stazionePartenza;}
     public Stazione getStazioneArrivo() {return stazioneArrivo;}
     public int getDistanzaKm() {return distanzaKm;}
-    public TipoTreno getTipoTreno() {return tipoTreno;}
-    public int getDurataMinuti() {return durataMinuti;}
-    public double getPrezzo() {return prezzo;}
-    public String getDurataFormattata() {
-        int ore = durataMinuti / 60;
-        int minuti = durataMinuti % 60;
-        return String.format("%dh %dm", ore, minuti);
-    }
+
     @Override
     public String toString() {
-        return String.format("Tratta: %s → %s (%d km, %s, %.2f€, %s)",
+        return String.format("Tratta: %s → %s (%d km)",
                 stazionePartenza.getNome(),
                 stazioneArrivo.getNome(),
-                distanzaKm,
-                tipoTreno,
-                prezzo,
-                getDurataFormattata());
+                distanzaKm);
     }
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         Tratta tratta = (Tratta) obj;
-        return stazionePartenza.equals(tratta.stazionePartenza) &&
-                stazioneArrivo.equals(tratta.stazioneArrivo) &&
-                tipoTreno.equals(tratta.tipoTreno);
+        return Objects.equals(stazionePartenza, tratta.stazionePartenza) &&
+                Objects.equals(stazioneArrivo, tratta.stazioneArrivo);
     }
     @Override
-    public int hashCode() {
-        return stazionePartenza.hashCode() + stazioneArrivo.hashCode() + tipoTreno.hashCode();
-    }
+    public int hashCode() {return Objects.hash(stazionePartenza, stazioneArrivo);}
 }

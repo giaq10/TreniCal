@@ -3,6 +3,8 @@ package it.trenical.common.model.viaggi;
 import it.trenical.common.model.tratte.Tratta;
 import it.trenical.common.model.treni.Treno;
 import it.trenical.common.model.stazioni.Binario;
+import it.trenical.common.model.viaggi.strategy.CalcoloViaggioStrategy;
+import it.trenical.common.model.viaggi.strategy.StrategyFactory;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,68 +18,62 @@ public class Viaggio {
     private final LocalDate dataViaggio;
     private final LocalTime orarioPartenzaProgrammato;
     private final LocalTime orarioArrivoProgrammato;
+    private final Binario binarioPartenza;
+
+    private final double prezzo;
+    private final int durataMinuti;
 
     private LocalTime orarioPartenzaEffettivo;
     private LocalTime orarioArrivoEffettivo;
-
-    private Binario binarioPartenza;
-
     private int postiDisponibili;
     private StatoViaggio stato;
-
     private int ritardoMinuti;
-
     private String motivoCancellazione;
 
     public Viaggio(Treno treno, Tratta tratta, LocalDate dataViaggio, LocalTime orarioPartenza) {
-        this(treno, tratta, dataViaggio, orarioPartenza, null, null);
-    }
-
-    public Viaggio(Treno treno, Tratta tratta, LocalDate dataViaggio, LocalTime orarioPartenza,
-                   Binario binarioPartenza, Binario binarioArrivo) {
         if (treno == null) throw new IllegalArgumentException("Treno obbligatorio");
         if (tratta == null) throw new IllegalArgumentException("Tratta obbligatoria");
         if (dataViaggio == null) throw new IllegalArgumentException("Data viaggio obbligatoria");
         if (orarioPartenza == null) throw new IllegalArgumentException("Orario partenza obbligatorio");
 
-        // Verifica compatibilità treno-tratta
-        if (!treno.getTipoTreno().equals(tratta.getTipoTreno())) {
-            throw new IllegalArgumentException(
-                    String.format("Tipo treno (%s) incompatibile con tratta (%s)",
-                            treno.getTipoTreno(), tratta.getTipoTreno()));
-        }
-
-        this.id = generateId(treno, tratta, dataViaggio, orarioPartenza);
         this.treno = treno;
         this.tratta = tratta;
         this.dataViaggio = dataViaggio;
         this.orarioPartenzaProgrammato = orarioPartenza;
-        this.orarioArrivoProgrammato = calcolaOrarioArrivo(orarioPartenza, tratta.getDurataMinuti());
 
-        // Inizialmente gli orari effettivi sono uguali a quelli programmati
+        this.binarioPartenza = generaBinarioRandom();
+
+        CalcoloViaggioStrategy strategy = StrategyFactory.getStrategy(treno.getTipoTreno());
+        this.durataMinuti = strategy.calcolaDurata(tratta.getDistanzaKm(), treno.getTipoTreno());
+        this.prezzo = strategy.calcolaPrezzo(tratta.getDistanzaKm(), treno.getTipoTreno());
+
+        this.orarioArrivoProgrammato = orarioPartenza.plusMinutes(durataMinuti);
+
+        this.id = generaIdUnico();
+
         this.orarioPartenzaEffettivo = orarioPartenza;
         this.orarioArrivoEffettivo = this.orarioArrivoProgrammato;
-
-        // Binario (può essere null se non specificati)
-        this.binarioPartenza = binarioPartenza;
-
-        // Stato iniziale
         this.postiDisponibili = treno.getPostiTotali();
         this.stato = StatoViaggio.PROGRAMMATO;
         this.ritardoMinuti = 0;
     }
 
-    private String generateId(Treno treno, Tratta tratta, LocalDate data, LocalTime orario) {
-        return String.format("%s_%s_%s_%s_%s",
+    private Binario generaBinarioRandom() {
+        Binario[] binari = Binario.values();
+        int index = (int) (Math.random() * binari.length);
+        return binari[index];
+    }
+
+    private String generaIdUnico() {
+        String hashInput = String.format("%s_%s_%s_%s_%s_%s",
                 treno.getCodice(),
                 tratta.getStazionePartenza().name(),
                 tratta.getStazioneArrivo().name(),
-                data.toString(),
-                orario.toString().replace(":", ""));
-    }
-
-    private LocalTime calcolaOrarioArrivo(LocalTime partenza, int durataMinuti) {
-        return partenza.plusMinutes(durataMinuti);
+                dataViaggio.toString(),
+                orarioPartenzaProgrammato.toString().replace(":", ""),
+                binarioPartenza.name());
+        int hash = Math.abs(hashInput.hashCode());
+        return String.format("V%08d", hash % 100000000);
     }
 
     public boolean prenotaPosto() {
@@ -87,6 +83,7 @@ public class Viaggio {
         }
         return false;
     }
+
     public boolean liberaPosto() {
         if (postiDisponibili < treno.getPostiTotali()) {
             postiDisponibili++;
@@ -94,6 +91,7 @@ public class Viaggio {
         }
         return false;
     }
+
     public boolean hasPostiDisponibili() {
         return postiDisponibili > 0 && stato.isAttivo();
     }
@@ -104,24 +102,20 @@ public class Viaggio {
 
     public void cambioOrarioPartenza(LocalTime nuovoOrario) {
         this.orarioPartenzaEffettivo = nuovoOrario;
-        // Ricalcola automaticamente l'orario di arrivo mantenendo la durata della tratta
-        this.orarioArrivoEffettivo = nuovoOrario.plusMinutes(tratta.getDurataMinuti());
+        // Ricalcola automaticamente l'orario di arrivo mantenendo la durata
+        this.orarioArrivoEffettivo = nuovoOrario.plusMinutes(durataMinuti);
     }
-    public void impostaRitardo(int minuti){//, String motivo) {
+
+    public void impostaRitardo(int minuti) {
         this.ritardoMinuti = minuti;
-        //this.motivoRitardo = motivo;
         if (minuti > 0) {
             this.stato = StatoViaggio.RITARDO;
-            // Il ritardo si applica all'orario di arrivo, non modifica la partenza
+            // Il ritardo si applica all'orario di arrivo
             this.orarioArrivoEffettivo = this.orarioArrivoProgrammato.plusMinutes(minuti);
         } else {
             // Ritardo azzerato
             this.orarioArrivoEffettivo = this.orarioArrivoProgrammato;
         }
-    }
-
-    public void cambioBinarioPartenza(Binario nuovoBinario) {
-        this.binarioPartenza = nuovoBinario;
     }
 
     public void cancellaViaggio(String motivo) {
@@ -135,18 +129,17 @@ public class Viaggio {
     public LocalDate getDataViaggio() { return dataViaggio; }
     public LocalTime getOrarioPartenza() { return orarioPartenzaProgrammato; }
     public LocalTime getOrarioArrivo() { return orarioArrivoProgrammato; }
-
     public LocalTime getOrarioPartenzaEffettivo() { return orarioPartenzaEffettivo; }
     public LocalTime getOrarioArrivoEffettivo() { return orarioArrivoEffettivo; }
-
     public Binario getBinarioPartenza() { return binarioPartenza; }
+
+    public double getPrezzo() { return prezzo; }
+    public int getDurataMinuti() { return durataMinuti; }
 
     public int getPostiDisponibili() { return postiDisponibili; }
     public int getPostiOccupati() { return treno.getPostiTotali() - postiDisponibili; }
     public StatoViaggio getStato() { return stato; }
-
     public int getRitardoMinuti() { return ritardoMinuti; }
-
     public String getMotivoCancellazione() { return motivoCancellazione; }
 
     public LocalDateTime getDataOraPartenza() {
@@ -165,17 +158,24 @@ public class Viaggio {
         return LocalDateTime.of(dataViaggio, orarioArrivoEffettivo);
     }
 
-    public double getPrezzo() {return tratta.getPrezzo();}
+    public boolean isDisponibile() {
+        return hasPostiDisponibili() && stato.isAttivo();
+    }
 
-    public boolean isDisponibile() {return hasPostiDisponibili() && stato.isAttivo();}
+    public boolean isCancellato() {
+        return stato == StatoViaggio.CANCELLATO;
+    }
 
-    public boolean isCancellato() {return stato == StatoViaggio.CANCELLATO;}
+    public boolean haRitardo() {
+        return ritardoMinuti > 0;
+    }
 
-    public boolean haRitardo() {return ritardoMinuti > 0;}
+    public String getDurataFormattata() {
+        int ore = durataMinuti / 60;
+        int minuti = durataMinuti % 60;
+        return String.format("%dh %dm", ore, minuti);
+    }
 
-    public boolean hasCambioBinario() {return binarioPartenza != null;}
-
-    // Formattazione leggibile per date/ore
     public String getDataOraPartenzaFormattata() {
         return String.format("%02d/%02d/%d alle %02d:%02d",
                 dataViaggio.getDayOfMonth(),
@@ -184,6 +184,7 @@ public class Viaggio {
                 orarioPartenzaEffettivo.getHour(),
                 orarioPartenzaEffettivo.getMinute());
     }
+
     public String getDataOraArrivoFormattata() {
         return String.format("%02d/%02d/%d alle %02d:%02d",
                 dataViaggio.getDayOfMonth(),
@@ -194,31 +195,7 @@ public class Viaggio {
     }
 
     public String getInfoBinari() {
-        return binarioPartenza == null ?
-                "Binario non assegnato" :
-                "Binario " + binarioPartenza.getNumero();
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(String.format("Viaggio %s: %s → %s del %s",
-                treno.getCodice(),
-                tratta.getStazionePartenza().getNome(),
-                tratta.getStazioneArrivo().getNome(),
-                dataViaggio));
-        if (!orarioPartenzaEffettivo.equals(orarioPartenzaProgrammato)) {
-            sb.append(String.format(" alle %s (era %s)",
-                    orarioPartenzaEffettivo, orarioPartenzaProgrammato));
-        } else {
-            sb.append(String.format(" alle %s", orarioPartenzaEffettivo));
-        }
-        if (ritardoMinuti > 0) {
-            sb.append(String.format(" (+%d min ritardo)", ritardoMinuti));
-        }
-        sb.append(String.format(" (€%.2f, %d posti disponibili, %s)",
-                getPrezzo(), postiDisponibili, stato));
-        return sb.toString();
+        return "Binario " + binarioPartenza.getNumero();
     }
 
     @Override
@@ -230,5 +207,29 @@ public class Viaggio {
     }
 
     @Override
-    public int hashCode() {return Objects.hash(id);}
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("Viaggio %s: %s del %s alle %s",
+                id,
+                tratta.toString(),
+                dataViaggio,
+                orarioPartenzaEffettivo));
+
+        if (ritardoMinuti > 0)
+            sb.append(String.format(" (+%d min ritardo)", ritardoMinuti));
+
+        sb.append(String.format(" (€%.2f; %s; %d posti disponibili, %s, %s)",
+                prezzo,
+                getDurataFormattata(),
+                postiDisponibili,
+                getInfoBinari(),
+                stato));
+
+        return sb.toString();
+    }
 }

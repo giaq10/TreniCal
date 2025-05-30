@@ -1,273 +1,420 @@
-
 import it.trenical.common.model.stazioni.Stazione;
-import it.trenical.common.model.tratte.*;
-import it.trenical.common.model.treni.TipoTreno;
+import it.trenical.common.model.tratte.Tratta;
+import it.trenical.common.model.tratte.TrattaFactory;
+
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.DisplayName;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
-@DisplayName("Test Dettagliato Sistema Tratte")
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Test suite completa per Tratta e TrattaFactory
+ * Verifica il funzionamento dopo il refactoring (rimozione TipoTreno)
+ */
 class TrattaTest {
 
-    @BeforeEach
-    void setUp() {
-        System.out.println("\n--- Inizio Test ---");
+    private Tratta trattaRomaMilano;
+    private Tratta trattaNapoliTorino;
+    private Tratta trattaFirenzeBologna;
+
+    @BeforeAll
+    static void setupAll() {
+        System.out.println("=== INIZIO TEST SUITE TRATTE ===");
+        System.out.println("Testando Tratta e TrattaFactory dopo refactoring");
     }
+
+    @BeforeEach
+    void setup() {
+        System.out.println("Preparazione tratte di test...");
+
+        // Tratte di test standard
+        trattaRomaMilano = new Tratta(Stazione.ROMA, Stazione.MILANO);
+        trattaNapoliTorino = new Tratta(Stazione.NAPOLI, Stazione.TORINO);
+        trattaFirenzeBologna = new Tratta(Stazione.FIRENZE, Stazione.BOLOGNA);
+    }
+
+    // =====================================================
+    // TEST COSTRUTTORE TRATTA
+    // =====================================================
+
+    @Test
+    @DisplayName("Costruttore Tratta - creazione corretta")
+    void shouldCreateTrattaCorrectly() {
+        System.out.println("Test: Creazione Tratta corretta");
+
+        assertNotNull(trattaRomaMilano, "Tratta non dovrebbe essere null");
+        assertEquals(Stazione.ROMA, trattaRomaMilano.getStazionePartenza());
+        assertEquals(Stazione.MILANO, trattaRomaMilano.getStazioneArrivo());
+        assertTrue(trattaRomaMilano.getDistanzaKm() > 0, "Distanza deve essere positiva");
+
+        System.out.println("✅ " + trattaRomaMilano);
+        System.out.println("📏 Distanza calcolata: " + trattaRomaMilano.getDistanzaKm() + " km");
+        System.out.println("✅ " + trattaNapoliTorino);
+        System.out.println("📏 Distanza calcolata: " + trattaNapoliTorino.getDistanzaKm() + " km");
+        System.out.println("✅ " + trattaFirenzeBologna);
+        System.out.println("📏 Distanza calcolata: " + trattaFirenzeBologna.getDistanzaKm() + " km");
+    }
+
+    @Test
+    @DisplayName("Costruttore Tratta - validazione parametri obbligatori")
+    void shouldThrowExceptionForInvalidParameters() {
+        System.out.println("Test: Validazione parametri costruttore");
+
+        // Test stazione partenza null
+        IllegalArgumentException exception1 = assertThrows(
+                IllegalArgumentException.class,
+                () -> new Tratta(null, Stazione.MILANO),
+                "Dovrebbe lanciare eccezione per stazione partenza null"
+        );
+        assertTrue(exception1.getMessage().contains("partenza obbligatoria"));
+
+        // Test stazione arrivo null
+        IllegalArgumentException exception2 = assertThrows(
+                IllegalArgumentException.class,
+                () -> new Tratta(Stazione.ROMA, null),
+                "Dovrebbe lanciare eccezione per stazione arrivo null"
+        );
+        assertTrue(exception2.getMessage().contains("arrivo obbligatoria"));
+
+        // Test stazioni uguali
+        IllegalArgumentException exception3 = assertThrows(
+                IllegalArgumentException.class,
+                () -> new Tratta(Stazione.ROMA, Stazione.ROMA),
+                "Dovrebbe lanciare eccezione per stazioni uguali"
+        );
+        assertTrue(exception3.getMessage().contains("non possono essere uguali"));
+
+        System.out.println("✅ Tutte le validazioni funzionano correttamente");
+    }
+
+    @Test
+    @DisplayName("Calcolo distanza - logica basata su valori stazioni")
+    void shouldCalculateDistanceCorrectly() {
+        System.out.println("Test: Calcolo distanza");
+
+        // Verifica che la distanza sia calcolata in base ai valori delle stazioni
+        int valoreRoma = Stazione.ROMA.getValore();
+        int valoreMilano = Stazione.MILANO.getValore();
+        int differenza = Math.abs(valoreRoma - valoreMilano);
+
+        // La distanza dovrebbe essere circa: differenza * 100 ± 20
+        int distanzaAttesa = differenza * 100;
+        int tolleranza = 30; // ±30 km di tolleranza per la variazione random
+
+        int distanzaCalcolata = trattaRomaMilano.getDistanzaKm();
+
+        assertTrue(distanzaCalcolata >= distanzaAttesa - tolleranza,
+                "Distanza troppo piccola rispetto al previsto");
+        assertTrue(distanzaCalcolata <= distanzaAttesa + tolleranza,
+                "Distanza troppo grande rispetto al previsto");
+        assertTrue(distanzaCalcolata >= 50, "Distanza minima dovrebbe essere 50 km");
+
+        System.out.println("📊 Valore Roma: " + valoreRoma + ", Valore Milano: " + valoreMilano);
+        System.out.println("📊 Differenza: " + differenza + ", Distanza base attesa: " + distanzaAttesa);
+        System.out.println("📊 Distanza calcolata: " + distanzaCalcolata + " km");
+        System.out.println("✅ Logica di calcolo distanza verificata");
+    }
+
+    @Test
+    @DisplayName("Metodi utility Tratta")
+    void shouldProvideUtilityMethods() {
+        System.out.println("Test: Metodi utility Tratta");
+
+        // Test toString() - restituisce la descrizione completa
+        String toString = trattaRomaMilano.toString();
+
+        // Verifica che contenga gli elementi essenziali
+        assertTrue(toString.contains("Roma → Milano"), "Dovrebbe contenere 'Roma → Milano'");
+        assertTrue(toString.contains("km"), "Dovrebbe contenere 'km'");
+        assertTrue(toString.contains(String.valueOf(trattaRomaMilano.getDistanzaKm())),
+                "Dovrebbe contenere la distanza calcolata");
+
+        // Se hai rimosso getDescrizione() e getDescrizioneCompleta(),
+        // verifica solo che toString() funzioni correttamente
+        assertNotNull(toString, "toString non dovrebbe essere null");
+        assertFalse(toString.trim().isEmpty(), "toString non dovrebbe essere vuoto");
+
+        // Verifica formato atteso (esempio: "Tratta: Roma → Milano (393 km)")
+        // Oppure se il formato è diverso, adatta di conseguenza
+        assertTrue(toString.matches(".*Roma.*→.*Milano.*\\(\\d+\\s*km\\).*"),
+                "Formato toString non corretto: " + toString);
+
+        System.out.println("📝 ToString: " + toString);
+        System.out.println("✅ Metodi utility verificati");
+    }
+
+    // =====================================================
+    // TEST EQUALS & HASHCODE
+    // =====================================================
+
+    @Test
+    @DisplayName("Equals e HashCode - identità basata su stazioni")
+    void shouldImplementEqualsAndHashCodeCorrectly() {
+        System.out.println("Test: Equals e HashCode");
+
+        // Crea due tratte identiche
+        Tratta tratta1 = new Tratta(Stazione.ROMA, Stazione.MILANO);
+        Tratta tratta2 = new Tratta(Stazione.ROMA, Stazione.MILANO);
+        Tratta trattaDiversa = new Tratta(Stazione.MILANO, Stazione.ROMA); // Opposta
+
+        // Test equals
+        assertEquals(tratta1, tratta2, "Tratte con stesse stazioni dovrebbero essere uguali");
+        assertEquals(tratta1, trattaRomaMilano, "Tratte con stesse stazioni dovrebbero essere uguali");
+        assertNotEquals(tratta1, trattaDiversa, "Tratte con stazioni opposte dovrebbero essere diverse");
+        assertNotEquals(tratta1, null, "Tratta non dovrebbe essere uguale a null");
+        assertNotEquals(tratta1, "stringa", "Tratta non dovrebbe essere uguale a oggetto diverso");
+
+        // Test hashCode
+        assertEquals(tratta1.hashCode(), tratta2.hashCode(), "HashCode dovrebbe essere uguale per tratte uguali");
+        assertEquals(tratta1.hashCode(), trattaRomaMilano.hashCode(), "HashCode coerente con equals");
+
+        // Test riflessività, simmetria, transitività
+        assertEquals(tratta1, tratta1, "Riflessività: oggetto uguale a se stesso");
+        assertEquals(tratta2, tratta1, "Simmetria: se a=b allora b=a");
+
+        System.out.println("✅ Equals e HashCode implementati correttamente");
+    }
+
+    // =====================================================
+    // TEST TRATTAFACTORY
+    // =====================================================
+
+    @Test
+    @DisplayName("TrattaFactory - creazione singola tratta")
+    void shouldCreateSingleTratta() {
+        System.out.println("Test: TrattaFactory creazione singola");
+
+        // Test con stazioni enum
+        Tratta trattaFactory1 = TrattaFactory.creaTratta(Stazione.VENEZIA, Stazione.GENOVA);
+        assertNotNull(trattaFactory1);
+        assertEquals(Stazione.VENEZIA, trattaFactory1.getStazionePartenza());
+        assertEquals(Stazione.GENOVA, trattaFactory1.getStazioneArrivo());
+
+        // Test con nomi stringa
+        Tratta trattaFactory2 = TrattaFactory.creaTratta("Bologna", "Verona");
+        assertNotNull(trattaFactory2);
+        assertEquals(Stazione.BOLOGNA, trattaFactory2.getStazionePartenza());
+        assertEquals(Stazione.VERONA, trattaFactory2.getStazioneArrivo());
+
+        System.out.println("✅ " + trattaFactory1);
+        System.out.println("✅ " + trattaFactory2);
+    }
+
+    @Test
+    @DisplayName("TrattaFactory - creazione con nomi invalidi")
+    void shouldThrowExceptionForInvalidStationNames() {
+        System.out.println("Test: TrattaFactory validazione nomi");
+
+        // Test nome stazione inesistente
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> TrattaFactory.creaTratta("StazioneInesistente", "Roma"),
+                "Dovrebbe lanciare eccezione per nome stazione inesistente"
+        );
+        assertTrue(exception.getMessage().contains("non trovata"));
+
+        System.out.println("✅ Validazione nomi stazioni funziona");
+    }
+
+    @Test
+    @DisplayName("TrattaFactory - creazione tutte le tratte")
+    void shouldCreateAllPossibleTratte() {
+        System.out.println("Test: TrattaFactory tutte le tratte");
+
+        List<Tratta> tutteLeTratte = TrattaFactory.creaTutteLeTratte();
+
+
+        // Calcolo numero atteso: 12 stazioni * 11 destinazioni = 132 tratte
+        int numeroStazioni = Stazione.values().length;
+        int numeroTratteAttese = numeroStazioni * (numeroStazioni - 1);
+
+        assertEquals(numeroTratteAttese, tutteLeTratte.size(),
+                "Numero tratte non corretto");
+
+        // Verifica che non ci siano duplicati
+        Set<Tratta> setTratte = new HashSet<>(tutteLeTratte);
+        assertEquals(tutteLeTratte.size(), setTratte.size(),
+                "Non dovrebbero esserci tratte duplicate");
+
+        // Verifica che non ci siano tratte con stazioni uguali
+        boolean haTratteSbagliate = tutteLeTratte.stream()
+                .anyMatch(t -> t.getStazionePartenza().equals(t.getStazioneArrivo()));
+        assertFalse(haTratteSbagliate, "Non dovrebbero esserci tratte con stazioni uguali");
+
+        // Stampa tutte le tratte create
+        System.out.println("\n=== ELENCO COMPLETO TRATTE ===");
+        for (int i = 0; i < tutteLeTratte.size(); i++) {
+            System.out.println((i + 1) + ". " + tutteLeTratte.get(i));
+        }
+        System.out.println("📊 Numero stazioni: " + numeroStazioni);
+        System.out.println("📊 Tratte totali create: " + tutteLeTratte.size());
+        System.out.println("📊 Tratte attese: " + numeroTratteAttese);
+        System.out.println("✅ Tutte le tratte create correttamente");
+    }
+
+    @Test
+    @DisplayName("TrattaFactory - ricerca tratta specifica")
+    void shouldFindSpecificTratta() {
+        System.out.println("Test: TrattaFactory ricerca tratta");
+
+        List<Tratta> tutteLeTratte = TrattaFactory.creaTutteLeTratte();
+
+        // Test ricerca tratta esistente
+        Tratta trattaTrovata = TrattaFactory.trovaTratta(tutteLeTratte,
+                Stazione.MILANO, Stazione.NAPOLI);
+
+        assertNotNull(trattaTrovata, "Dovrebbe trovare la tratta Milano-Napoli");
+        assertEquals(Stazione.MILANO, trattaTrovata.getStazionePartenza());
+        assertEquals(Stazione.NAPOLI, trattaTrovata.getStazioneArrivo());
+
+        // Test ricerca tratta inesistente (stazioni uguali)
+        Tratta trattaNonTrovata = TrattaFactory.trovaTratta(tutteLeTratte,
+                Stazione.ROMA, Stazione.ROMA);
+
+        assertNull(trattaNonTrovata, "Non dovrebbe trovare tratta con stazioni uguali");
+
+        System.out.println("✅ Ricerca tratta funziona correttamente");
+    }
+
+    @Test
+    @DisplayName("TrattaFactory - validazione tratte")
+    void shouldValidateTratte() {
+        System.out.println("Test: TrattaFactory validazione");
+
+        // Test tratte valide
+        assertTrue(TrattaFactory.isTrattaValida(Stazione.ROMA, Stazione.MILANO));
+        assertTrue(TrattaFactory.isTrattaValida(Stazione.NAPOLI, Stazione.TORINO));
+
+        // Test tratte invalide
+        assertFalse(TrattaFactory.isTrattaValida(null, Stazione.MILANO),
+                "Tratta con partenza null dovrebbe essere invalida");
+        assertFalse(TrattaFactory.isTrattaValida(Stazione.ROMA, null),
+                "Tratta con arrivo null dovrebbe essere invalida");
+        assertFalse(TrattaFactory.isTrattaValida(Stazione.ROMA, Stazione.ROMA),
+                "Tratta con stazioni uguali dovrebbe essere invalida");
+
+        System.out.println("✅ Validazione tratte funziona correttamente");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Roma", "Milano", "Napoli", "Torino", "Bologna"})
+    @DisplayName("Test creazione tratte con nomi string")
+    void shouldCreateTratteWithStringNames(String nomePartenza) {
+        System.out.println("Test parametrizzato: Tratta da " + nomePartenza);
+
+        // Prova a creare tratta verso una destinazione fissa
+        String nomeDestinazione = "Firenze";
+        if (nomePartenza.equals("Firenze")) {
+            nomeDestinazione = "Roma"; // Evita stazioni uguali
+        }
+
+        Tratta tratta = TrattaFactory.creaTratta(nomePartenza, nomeDestinazione);
+
+        assertNotNull(tratta);
+        assertEquals(nomePartenza, tratta.getStazionePartenza().getNome());
+        assertEquals(nomeDestinazione, tratta.getStazioneArrivo().getNome());
+        assertTrue(tratta.getDistanzaKm() > 0);
+
+        System.out.println("✅ " + tratta);
+    }
+
+    // =====================================================
+    // TEST PERFORMANCE E STRESS
+    // =====================================================
+
+    @Test
+    @DisplayName("Test performance creazione tutte le tratte")
+    void shouldCreateAllTrattesInReasonableTime() {
+        System.out.println("Test: Performance creazione tratte");
+
+        long startTime = System.currentTimeMillis();
+
+        List<Tratta> tutteLeTratte = TrattaFactory.creaTutteLeTratte();
+
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+
+        // La creazione di tutte le tratte dovrebbe essere veloce (< 1 secondo)
+        assertTrue(duration < 1000,
+                "Creazione tratte troppo lenta: " + duration + "ms");
+
+        System.out.println("⏱️ Tempo creazione " + tutteLeTratte.size() + " tratte: " + duration + "ms");
+        System.out.println("✅ Performance accettabile");
+    }
+
+    @RepeatedTest(value = 5, name = "Test ripetuto {currentRepetition}/{totalRepetitions}")
+    @DisplayName("Test stabilità calcolo distanze")
+    void shouldCalculateConsistentDistances() {
+        System.out.println("Test ripetuto: Stabilità calcolo distanze");
+
+        // Crea la stessa tratta più volte e verifica coerenza
+        Tratta tratta = new Tratta(Stazione.ROMA, Stazione.MILANO);
+
+        // La distanza dovrebbe essere sempre positiva e ragionevole
+        assertTrue(tratta.getDistanzaKm() > 0);
+        assertTrue(tratta.getDistanzaKm() < 2000, "Distanza troppo grande per l'Italia");
+
+        // Test che la variazione random non sia eccessiva
+        int valoreRoma = Stazione.ROMA.getValore();
+        int valoreMilano = Stazione.MILANO.getValore();
+        int distanzaBase = Math.abs(valoreRoma - valoreMilano) * 100;
+        int distanzaCalcolata = tratta.getDistanzaKm();
+
+        // La variazione dovrebbe essere entro ±20km dalla base
+        assertTrue(Math.abs(distanzaCalcolata - distanzaBase) <= 30,
+                "Variazione random eccessiva");
+
+        System.out.println("🔄 Distanza calcolata: " + distanzaCalcolata + " km");
+    }
+
+    // =====================================================
+    // TEST EDGE CASES
+    // =====================================================
+
+    @Test
+    @DisplayName("Test edge cases - stazioni estreme")
+    void shouldHandleExtremeStations() {
+        System.out.println("Test: Edge cases stazioni estreme");
+
+        // Test con la prima e ultima stazione (valori estremi)
+        Stazione primaStazione = Stazione.REGGIO_CALABRIA; // Valore 0
+        Stazione ultimaStazione = Stazione.VENEZIA;        // Valore 11
+
+        Tratta trattaEstrema = new Tratta(primaStazione, ultimaStazione);
+
+        assertNotNull(trattaEstrema);
+        assertTrue(trattaEstrema.getDistanzaKm() > 0);
+
+        // Dovrebbe essere la tratta più lunga possibile
+        int distanzaMassima = Math.abs(primaStazione.getValore() - ultimaStazione.getValore()) * 100;
+        assertTrue(trattaEstrema.getDistanzaKm() >= distanzaMassima - 20,
+                "Distanza dovrebbe essere vicina al massimo teorico");
+
+        System.out.println("🏔️ Tratta estrema: " + trattaEstrema);
+        System.out.println("📏 Distanza massima teorica: " + distanzaMassima + " km");
+    }
+
+    // =====================================================
+    // CLEANUP
+    // =====================================================
 
     @AfterEach
     void tearDown() {
-        System.out.println("--- Fine Test ---\n");
+        System.out.println("Pulizia test completata\n");
     }
 
-    @Test
-    @DisplayName("Test Creazione Singola Tratta")
-    void testCreazioneSingolaTratta() {
-        System.out.println("=== TEST CREAZIONE SINGOLA TRATTA ===");
+    @AfterAll
+    static void tearDownAll() {
+        System.out.println("=== FINE TEST SUITE TRATTE ===");
+        System.out.println("✅ Refactoring Tratta verificato con successo!");
 
-        // Arrange
-        Stazione partenza = Stazione.ROMA;
-        Stazione arrivo = Stazione.MILANO;
-        TipoTreno tipo = TipoTreno.STANDARD;
-
-        System.out.println("Input:");
-        System.out.println("- Partenza: " + partenza.getNome() + " (valore: " + partenza.getValore() + ")");
-        System.out.println("- Arrivo: " + arrivo.getNome() + " (valore: " + arrivo.getValore() + ")");
-        System.out.println("- Tipo Treno: " + tipo);
-
-        // Act
-        Tratta tratta = new Tratta(partenza, arrivo, tipo);
-
-        // Assert e Output
-        System.out.println("\nRisultati:");
-        System.out.println("- Stazione Partenza: " + tratta.getStazionePartenza().getNome());
-        System.out.println("- Stazione Arrivo: " + tratta.getStazioneArrivo().getNome());
-        System.out.println("- Tipo Treno: " + tratta.getTipoTreno());
-        System.out.println("- Distanza calcolata: " + tratta.getDistanzaKm() + " km");
-        System.out.println("- Durata: " + tratta.getDurataMinuti() + " minuti");
-        System.out.println("- Durata formattata: " + tratta.getDurataFormattata());
-        System.out.println("- Prezzo: €" + tratta.getPrezzo());
-        System.out.println("- ToString completo: " + tratta.toString());
-
-        assertEquals(partenza, tratta.getStazionePartenza());
-        assertEquals(arrivo, tratta.getStazioneArrivo());
-        assertEquals(tipo, tratta.getTipoTreno());
-        assertTrue(tratta.getDistanzaKm() > 0);
-        assertTrue(tratta.getDurataMinuti() > 0);
-        assertTrue(tratta.getPrezzo() > 0);
-    }
-
-    @Test
-    @DisplayName("Test Tutti i Tipi di Treno sulla Stessa Tratta")
-    void testTuttiTipiTreno() {
-        System.out.println("=== TEST CONFRONTO TUTTI I TIPI DI TRENO ===");
-
-        Stazione partenza = Stazione.ROMA;
-        Stazione arrivo = Stazione.NAPOLI;
-
-        System.out.println("Tratta fissa: " + partenza.getNome() + " → " + arrivo.getNome());
-        System.out.println("Differenza valori stazioni: " + Math.abs(partenza.getValore() - arrivo.getValore()));
-        System.out.println();
-
-        Tratta trattaEconomy = new Tratta(partenza, arrivo, TipoTreno.ECONOMY);
-        Tratta trattaStandard = new Tratta(partenza, arrivo, TipoTreno.STANDARD);
-        Tratta trattaBusiness = new Tratta(partenza, arrivo, TipoTreno.BUSINESS);
-
-        System.out.println("ECONOMY:");
-        System.out.println("  - Distanza: " + trattaEconomy.getDistanzaKm() + " km");
-        System.out.println("  - Durata: " + trattaEconomy.getDurataMinuti() + " min (" + trattaEconomy.getDurataFormattata() + ")");
-        System.out.println("  - Prezzo: €" + trattaEconomy.getPrezzo());
-        System.out.println("  - Velocità media: " + String.format("%.1f", (double)trattaEconomy.getDistanzaKm() * 60 / trattaEconomy.getDurataMinuti()) + " km/h");
-
-        System.out.println("STANDARD:");
-        System.out.println("  - Distanza: " + trattaStandard.getDistanzaKm() + " km");
-        System.out.println("  - Durata: " + trattaStandard.getDurataMinuti() + " min (" + trattaStandard.getDurataFormattata() + ")");
-        System.out.println("  - Prezzo: €" + trattaStandard.getPrezzo());
-        System.out.println("  - Velocità media: " + String.format("%.1f", (double)trattaStandard.getDistanzaKm() * 60 / trattaStandard.getDurataMinuti()) + " km/h");
-
-        System.out.println("BUSINESS:");
-        System.out.println("  - Distanza: " + trattaBusiness.getDistanzaKm() + " km");
-        System.out.println("  - Durata: " + trattaBusiness.getDurataMinuti() + " min (" + trattaBusiness.getDurataFormattata() + ")");
-        System.out.println("  - Prezzo: €" + trattaBusiness.getPrezzo());
-        System.out.println("  - Velocità media: " + String.format("%.1f", (double)trattaBusiness.getDistanzaKm() * 60 / trattaBusiness.getDurataMinuti()) + " km/h");
-
-        // Verifica che Business sia più veloce ed Economy più economico
-        assertTrue(trattaBusiness.getDurataMinuti() < trattaStandard.getDurataMinuti());
-        assertTrue(trattaStandard.getDurataMinuti() < trattaEconomy.getDurataMinuti());
-        assertTrue(trattaEconomy.getPrezzo() < trattaStandard.getPrezzo());
-        assertTrue(trattaStandard.getPrezzo() < trattaBusiness.getPrezzo());
-    }
-
-    @Test
-    @DisplayName("Test Distanze Diverse")
-    void testDistanzeDiverse() {
-        System.out.println("=== TEST DISTANZE DIVERSE ===");
-
-        // Tratta corta
-        Tratta trattaCorta = new Tratta(Stazione.ROMA, Stazione.FIRENZE, TipoTreno.STANDARD);
-        System.out.println("TRATTA CORTA - " + trattaCorta.getStazionePartenza().getNome() + " → " + trattaCorta.getStazioneArrivo().getNome());
-        System.out.println("  Differenza valori: " + Math.abs(trattaCorta.getStazionePartenza().getValore() - trattaCorta.getStazioneArrivo().getValore()));
-        System.out.println("  Distanza: " + trattaCorta.getDistanzaKm() + " km");
-        System.out.println("  Durata: " + trattaCorta.getDurataFormattata());
-        System.out.println("  Prezzo: €" + trattaCorta.getPrezzo());
-
-        // Tratta lunga
-        Tratta trattaLunga = new Tratta(Stazione.REGGIO_CALABRIA, Stazione.MILANO, TipoTreno.STANDARD);
-        System.out.println("TRATTA LUNGA - " + trattaLunga.getStazionePartenza().getNome() + " → " + trattaLunga.getStazioneArrivo().getNome());
-        System.out.println("  Differenza valori: " + Math.abs(trattaLunga.getStazionePartenza().getValore() - trattaLunga.getStazioneArrivo().getValore()));
-        System.out.println("  Distanza: " + trattaLunga.getDistanzaKm() + " km");
-        System.out.println("  Durata: " + trattaLunga.getDurataFormattata());
-        System.out.println("  Prezzo: €" + trattaLunga.getPrezzo());
-
-        assertTrue(trattaLunga.getDistanzaKm() > trattaCorta.getDistanzaKm());
-        assertTrue(trattaLunga.getDurataMinuti() > trattaCorta.getDurataMinuti());
-        assertTrue(trattaLunga.getPrezzo() > trattaCorta.getPrezzo());
-    }
-
-    @Test
-    @DisplayName("Test TrattaFactory")
-    void testTrattaFactory() {
-        System.out.println("=== TEST TRATTA FACTORY ===");
-
-        // Test creazione con stringhe
-        System.out.println("Test creazione con stringhe:");
-        System.out.println("Input: partenza='Napoli', arrivo='Torino', tipo='business'");
-
-        Tratta tratta = TrattaFactory.creaTratta("Napoli", "Torino", "business");
-
-        System.out.println("Output:");
-        System.out.println("  - Partenza convertita: " + tratta.getStazionePartenza().getNome());
-        System.out.println("  - Arrivo convertito: " + tratta.getStazioneArrivo().getNome());
-        System.out.println("  - Tipo convertito: " + tratta.getTipoTreno());
-        System.out.println("  - Risultato completo: " + tratta);
-
-        assertEquals(Stazione.NAPOLI, tratta.getStazionePartenza());
-        assertEquals(Stazione.TORINO, tratta.getStazioneArrivo());
-        assertEquals(TipoTreno.BUSINESS, tratta.getTipoTreno());
-
-        // Test creazione di tutte le tratte
-        System.out.println("\nTest creazione tutte le tratte per una coppia di stazioni:");
-        List<Tratta> tutteLeTratte = TrattaFactory.creaTutteLeTratte(Stazione.ROMA, Stazione.VENEZIA);
-
-        System.out.println("Stazioni: ROMA → VENEZIA");
-        System.out.println("Numero tratte create: " + tutteLeTratte.size());
-
-        for (Tratta t : tutteLeTratte) {
-            System.out.println("  - " + t.getTipoTreno() + ": " + t.getDurataFormattata() + ", €" + t.getPrezzo());
-        }
-
-        assertEquals(TipoTreno.values().length, tutteLeTratte.size());
-    }
-
-    @Test
-    @DisplayName("Test Validazione Tratte")
-    void testValidazioneTratte() {
-        System.out.println("=== TEST VALIDAZIONE TRATTE ===");
-
-        // Test tratta valida
-        boolean valida = TrattaFactory.isTrattaValida(Stazione.ROMA, Stazione.MILANO);
-        System.out.println("ROMA → MILANO: " + (valida ? "VALIDA" : "NON VALIDA"));
-        assertTrue(valida);
-
-        // Test tratta con stazioni uguali
-        boolean invalida = TrattaFactory.isTrattaValida(Stazione.ROMA, Stazione.ROMA);
-        System.out.println("ROMA → ROMA: " + (invalida ? "VALIDA" : "NON VALIDA"));
-        assertFalse(invalida);
-
-        // Test con null
-        boolean nullTest = TrattaFactory.isTrattaValida(null, Stazione.MILANO);
-        System.out.println("null → MILANO: " + (nullTest ? "VALIDA" : "NON VALIDA"));
-        assertFalse(nullTest);
-    }
-
-    @Test
-    @DisplayName("Test Equals e HashCode")
-    void testEqualsEHashCode() {
-        System.out.println("=== TEST EQUALS E HASHCODE ===");
-
-        Tratta tratta1 = new Tratta(Stazione.ROMA, Stazione.MILANO, TipoTreno.STANDARD);
-        Tratta tratta2 = new Tratta(Stazione.ROMA, Stazione.MILANO, TipoTreno.STANDARD);
-        Tratta tratta3 = new Tratta(Stazione.ROMA, Stazione.MILANO, TipoTreno.BUSINESS);
-
-        System.out.println("Tratta1: " + tratta1);
-        System.out.println("Tratta2: " + tratta2);
-        System.out.println("Tratta3: " + tratta3);
-
-        System.out.println("HashCode Tratta1: " + tratta1.hashCode());
-        System.out.println("HashCode Tratta2: " + tratta2.hashCode());
-        System.out.println("HashCode Tratta3: " + tratta3.hashCode());
-
-        System.out.println("Tratta1.equals(Tratta2): " + tratta1.equals(tratta2));
-        System.out.println("Tratta1.equals(Tratta3): " + tratta1.equals(tratta3));
-
-        assertTrue(tratta1.equals(tratta2));
-        assertFalse(tratta1.equals(tratta3));
-        assertEquals(tratta1.hashCode(), tratta2.hashCode());
-    }
-
-    @Test
-    @DisplayName("Test Eccezioni")
-    void testEccezioni() {
-        System.out.println("=== TEST GESTIONE ECCEZIONI ===");
-
-        // Test stazioni uguali
-        System.out.println("Test creazione tratta con stazioni uguali...");
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Tratta(Stazione.ROMA, Stazione.ROMA, TipoTreno.STANDARD);
-        });
-        System.out.println("Eccezione catturata: " + exception.getMessage());
-
-        // Test stazione non trovata
-        System.out.println("Test ricerca stazione inesistente...");
-        Exception exception2 = assertThrows(IllegalArgumentException.class, () -> {
-            Stazione.fromNome("StazioneInesistente");
-        });
-        System.out.println("Eccezione catturata: " + exception2.getMessage());
-    }
-
-    @Test
-    @DisplayName("Test Metodo fromNome di Stazione")
-    void testStazioneFromNome() {
-        System.out.println("=== TEST METODO fromNome STAZIONE ===");
-
-        // Test case sensitive
-        String[] nomiTest = {"Roma", "ROMA", "roma", "Milano", "Reggio Calabria"};
-
-        for (String nome : nomiTest) {
-            try {
-                Stazione stazione = Stazione.fromNome(nome);
-                System.out.println("Input: '" + nome + "' → Output: " + stazione.getNome() + " (valore: " + stazione.getValore() + ")");
-            } catch (Exception e) {
-                System.out.println("Input: '" + nome + "' → Errore: " + e.getMessage());
-            }
-        }
-    }
-
-    @Test
-    @DisplayName("Test Calcolo Dettagliato Strategy")
-    void testCalcoloStrategy() {
-        System.out.println("=== TEST DETTAGLIATO STRATEGY PATTERN ===");
-
-        // Creiamo più tratte con la stessa distanza per vedere le variazioni
-        Stazione partenza = Stazione.ROMA;
-        Stazione arrivo = Stazione.FIRENZE;
-
-        System.out.println("Analisi multiple creazioni stessa tratta: " + partenza.getNome() + " → " + arrivo.getNome());
-        System.out.println("(Per verificare le variazioni casuali nei calcoli)");
-
-        for (int i = 1; i <= 3; i++) {
-            System.out.println("\n--- Iterazione " + i + " ---");
-
-            for (TipoTreno tipo : TipoTreno.values()) {
-                Tratta tratta = new Tratta(partenza, arrivo, tipo);
-                double velocitaMedia = (double)tratta.getDistanzaKm() * 60 / tratta.getDurataMinuti();
-                double prezzoPerKm = tratta.getPrezzo() / tratta.getDistanzaKm();
-
-                System.out.printf("%s: %d km, %d min, €%.2f (%.1f km/h, €%.3f/km)%n",
-                        tipo, tratta.getDistanzaKm(), tratta.getDurataMinuti(),
-                        tratta.getPrezzo(), velocitaMedia, prezzoPerKm);
-            }
-        }
+        // Stampa statistiche finali
+        TrattaFactory.stampaStatistiche();
     }
 }

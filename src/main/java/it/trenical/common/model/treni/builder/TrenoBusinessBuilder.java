@@ -3,11 +3,22 @@ package it.trenical.common.model.treni.builder;
 import it.trenical.common.model.treni.ServizioTreno;
 import it.trenical.common.model.treni.TipoTreno;
 
-public class BuilderBusiness extends Builder {
-    public BuilderBusiness() {
+public class TrenoBusinessBuilder extends TrenoBuilder {
+
+    @Override
+    public TrenoBuilder buildTipo() {
         this.tipoTreno = TipoTreno.BUSINESS;
+        return this;
+    }
+
+    @Override
+    public TrenoBuilder buildPosti() {
         this.postiTotali = TipoTreno.BUSINESS.getPostiStandard();
-        // Servizi premium
+        return this;
+    }
+
+    @Override
+    public TrenoBuilder buildServizi() {
         this.servizi.add(ServizioTreno.ALTA_VELOCITA);
         this.servizi.add(ServizioTreno.RISTORAZIONE);
         this.servizi.add(ServizioTreno.WIFI);
@@ -15,5 +26,6 @@ public class BuilderBusiness extends Builder {
         this.servizi.add(ServizioTreno.PRESE_ELETTRICHE);
         this.servizi.add(ServizioTreno.SILENZIOSO);
         this.servizi.add(ServizioTreno.BUSINESS_LOUNGE);
+        return this;
     }
 }
