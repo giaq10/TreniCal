@@ -5,6 +5,9 @@ import it.trenical.common.model.treni.builder.TrenoDirector;
 import it.trenical.common.model.tratte.*;
 import it.trenical.common.model.stazioni.*;
 import org.junit.jupiter.api.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static org.junit.jupiter.api.Assertions.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -15,6 +18,7 @@ import java.time.LocalDateTime;
  */
 class ViaggioTest {
 
+    private static final Logger log = LoggerFactory.getLogger(ViaggioTest.class);
     private TrenoDirector director;
     private Treno trenoEconomy;
     private Treno trenoStandard;
@@ -178,6 +182,7 @@ class ViaggioTest {
     void testStrategyFactory() {
         // Act & Assert
         CalcoloViaggioStrategy economyStrategy = StrategyFactory.getStrategy(TipoTreno.ECONOMY);
+        System.out.println(economyStrategy);
         assertTrue(economyStrategy instanceof CalcoloViaggioEconomy);
 
         CalcoloViaggioStrategy standardStrategy = StrategyFactory.getStrategy(TipoTreno.STANDARD);
@@ -280,14 +285,14 @@ class ViaggioTest {
     @DisplayName("Creazione viaggio con parametri null deve lanciare eccezione")
     void testCreazioneViaggioParametriNull() {
         // Assert
-        assertThrows(IllegalArgumentException.class,
-                () -> new Viaggio(null, tratta, dataViaggio, orarioPartenza));
-        assertThrows(IllegalArgumentException.class,
-                () -> new Viaggio(trenoEconomy, null, dataViaggio, orarioPartenza));
-        assertThrows(IllegalArgumentException.class,
-                () -> new Viaggio(trenoEconomy, tratta, null, orarioPartenza));
-        assertThrows(IllegalArgumentException.class,
-                () -> new Viaggio(trenoEconomy, tratta, dataViaggio, null));
+        log.error("e: ", assertThrows(IllegalArgumentException.class,
+                () -> new Viaggio(null, tratta, dataViaggio, orarioPartenza)));
+        log.error("e: ",assertThrows(IllegalArgumentException.class,
+                () -> new Viaggio(trenoEconomy, null, dataViaggio, orarioPartenza)));
+        log.error("e: ",assertThrows(IllegalArgumentException.class,
+                () -> new Viaggio(trenoEconomy, tratta, null, orarioPartenza)));
+        log.error("e: ",assertThrows(IllegalArgumentException.class,
+                () -> new Viaggio(trenoEconomy, tratta, dataViaggio, null)));
     }
 
     // ===== TEST METODI UTILITY =====
@@ -297,18 +302,23 @@ class ViaggioTest {
     void testMetodiFormattazione() {
         // Arrange
         Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio, orarioPartenza);
+        String vi = viaggio.toString();
+        System.out.println(vi);
 
         // Act & Assert
         String durataFormattata = viaggio.getDurataFormattata();
+        System.out.println(durataFormattata);
         assertNotNull(durataFormattata);
         assertTrue(durataFormattata.contains("h"));
         assertTrue(durataFormattata.contains("m"));
 
         String dataPartenza = viaggio.getDataOraPartenzaFormattata();
+        System.out.println(dataPartenza);
         assertTrue(dataPartenza.contains("15/06/2025"));
         assertTrue(dataPartenza.contains("09:30"));
 
         String infoBinari = viaggio.getInfoBinari();
+        System.out.println(infoBinari);
         assertTrue(infoBinari.startsWith("Binario"));
     }
 
@@ -317,13 +327,16 @@ class ViaggioTest {
     void testLocalDateTimeGetters() {
         // Arrange
         Viaggio viaggio = new Viaggio(trenoEconomy, tratta, dataViaggio, orarioPartenza);
+        System.out.println(viaggio);
 
         // Act & Assert
         LocalDateTime dataOraPartenza = viaggio.getDataOraPartenza();
+        System.out.println(dataOraPartenza);
         assertEquals(dataViaggio, dataOraPartenza.toLocalDate());
         assertEquals(orarioPartenza, dataOraPartenza.toLocalTime());
 
         LocalDateTime dataOraArrivo = viaggio.getDataOraArrivo();
+        System.out.println(dataOraArrivo);
         assertEquals(dataViaggio, dataOraArrivo.toLocalDate());
         assertTrue(dataOraArrivo.toLocalTime().isAfter(orarioPartenza));
     }

@@ -32,7 +32,7 @@ public class Tratta {
 
     @Override
     public String toString() {
-        return String.format("Tratta: %s → %s (%d km)",
+        return String.format("%s → %s (%d km)",
                 stazionePartenza.getNome(),
                 stazioneArrivo.getNome(),
                 distanzaKm);
