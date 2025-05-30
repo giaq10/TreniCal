@@ -1,0 +1,69 @@
+@startuml
+package "viaggi.strategy" {
+  
+  interface CalcoloViaggioStrategy {
+    + calcolaDurata(distanzaKm: int, tipoTreno: TipoTreno): int
+    + calcolaPrezzo(distanzaKm: int, tipoTreno: TipoTreno): double
+  }
+
+  class CalcoloViaggioEconomy {
+    - VELOCITA_BASE_KMH: double
+    - PREZZO_BASE_PER_KM: double
+    + calcolaDurata(distanzaKm: int, tipoTreno: TipoTreno): int
+    + calcolaPrezzo(distanzaKm: int, tipoTreno: TipoTreno): double
+  }
+
+  class CalcoloViaggioStandard {
+    - economyStrategy: CalcoloViaggioEconomy
+    + calcolaDurata(distanzaKm: int, tipoTreno: TipoTreno): int
+    + calcolaPrezzo(distanzaKm: int, tipoTreno: TipoTreno): double
+  }
+
+  class CalcoloViaggioBusiness {
+    - economyStrategy: CalcoloViaggioEconomy
+    + calcolaDurata(distanzaKm: int, tipoTreno: TipoTreno): int
+    + calcolaPrezzo(distanzaKm: int, tipoTreno: TipoTreno): double
+  }
+
+  class StrategyFactory {
+    + getStrategy(tipoTreno: TipoTreno): CalcoloViaggioStrategy
+  }
+}
+
+package "viaggi" {
+  class Viaggio {
+    - id: String
+    - treno: Treno
+    - tratta: Tratta
+    - dataViaggio: LocalDate
+    - orarioPartenzaProgrammato: LocalTime
+    - prezzo: double
+    - durataMinuti: int
+    + Viaggio(...)
+    + prenotaPosto(): boolean
+    + liberaPosto(): boolean
+    + aggiornaStato(nuovoStato: StatoViaggio)
+    + impostaRitardo(minuti: int)
+    + cancellaViaggio(motivo: String)
+  }
+
+  enum StatoViaggio
+}
+
+' Relazioni tra Strategy
+CalcoloViaggioStrategy <|-- CalcoloViaggioEconomy
+CalcoloViaggioStrategy <|-- CalcoloViaggioStandard
+CalcoloViaggioStrategy <|-- CalcoloViaggioBusiness
+
+CalcoloViaggioStandard o-- CalcoloViaggioEconomy : economyStrategy
+CalcoloViaggioBusiness o-- CalcoloViaggioEconomy : economyStrategy
+
+StrategyFactory ..> CalcoloViaggioEconomy
+StrategyFactory ..> CalcoloViaggioStandard
+StrategyFactory ..> CalcoloViaggioBusiness
+StrategyFactory ..> CalcoloViaggioStrategy : getStrategy()
+
+' Aggregazione tra Viaggio e StrategyFactory
+Viaggio o-- StrategyFactory : strategy
+
+@enduml

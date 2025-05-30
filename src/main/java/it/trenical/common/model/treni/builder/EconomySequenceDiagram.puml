@@ -1,0 +1,21 @@
+@startuml
+actor server
+participant TrenoDirector
+participant TrenoStandardBuilder as builder
+
+server -> TrenoDirector : costruisciTrenoStandard("TRENOST123")
+activate TrenoDirector
+
+TrenoDirector -> builder : setCodice("TRENOST123")
+activate builder
+
+builder --> builder : buildTipo()
+builder --> builder : buildPosti()
+builder --> builder : buildServizi()
+
+builder --> TrenoDirector : getResult() : Treno
+deactivate builder
+
+TrenoDirector --> server : Treno
+deactivate TrenoDirector
+@enduml

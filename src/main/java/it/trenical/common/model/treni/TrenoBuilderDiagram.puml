@@ -1,0 +1,61 @@
+@startuml
+package "treni.builder" {
+  abstract class TrenoBuilder {
+    - codice: String
+    - tipoTreno: TipoTreno
+    - postiTotali: int
+    - servizi: Set<ServizioTreno>
+    + setCodice(codice): TrenoBuilder
+    + buildTipo(): TrenoBuilder
+    + buildPosti(): TrenoBuilder
+    + buildServizi(): TrenoBuilder
+    + getResult(): Treno
+  }
+
+  class TrenoBusinessBuilder {
+    + buildTipo(): TrenoBuilder
+    + buildPosti(): TrenoBuilder
+    + buildServizi(): TrenoBuilder
+  }
+  class TrenoStandardBuilder {
+    + buildTipo(): TrenoBuilder
+    + buildPosti(): TrenoBuilder
+    + buildServizi(): TrenoBuilder
+  }
+  class TrenoEconomyBuilder {
+    + buildTipo(): TrenoBuilder
+    + buildPosti(): TrenoBuilder
+    + buildServizi(): TrenoBuilder
+  }
+  class TrenoDirector {
+    + costruisciTreno(builder: TrenoBuilder, codice: String): Treno
+    + costruisciTrenoBusiness(codice: String): Treno
+    + costruisciTrenoStandard(codice: String): Treno
+    + costruisciTrenoEconomy(codice: String): Treno
+    + costruisciTrenoPerTipo(tipo: TipoTreno, codice: String): Treno
+  }
+}
+
+package "treni" {
+  class Treno {
+    + Treno(codice, tipoTreno, postiTotali, servizi)
+    + toString(): String
+    + getters...
+  }
+  enum TipoTreno
+  enum ServizioTreno
+}
+
+' relazioni
+TrenoBuilder <|-- TrenoBusinessBuilder
+TrenoBuilder <|-- TrenoStandardBuilder
+TrenoBuilder <|-- TrenoEconomyBuilder
+TrenoDirector --> TrenoBuilder : usa
+Treno --> TipoTreno
+Treno --> ServizioTreno
+
+' aggiunta della dipendenza dai concrete builder verso Treno
+TrenoBusinessBuilder ..> Treno
+TrenoStandardBuilder ..> Treno
+TrenoEconomyBuilder ..> Treno
+@enduml
