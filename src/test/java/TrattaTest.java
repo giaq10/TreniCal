@@ -1,10 +1,9 @@
 import it.trenical.common.model.stazioni.Stazione;
 import it.trenical.common.model.tratte.Tratta;
-import it.trenical.common.model.tratte.TrattaFactory;
+import it.trenical.common.model.tratte.TrattaUtil;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
@@ -14,7 +13,7 @@ import java.util.HashSet;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Test suite completa per Tratta e TrattaFactory
+ * Test suite completa per Tratta e TrattaUtil
  * Verifica il funzionamento dopo il refactoring (rimozione TipoTreno)
  */
 class TrattaTest {
@@ -26,7 +25,7 @@ class TrattaTest {
     @BeforeAll
     static void setupAll() {
         System.out.println("=== INIZIO TEST SUITE TRATTE ===");
-        System.out.println("Testando Tratta e TrattaFactory dopo refactoring");
+        System.out.println("Testando Tratta e TrattaUtil dopo refactoring");
     }
 
     @BeforeEach
@@ -186,18 +185,18 @@ class TrattaTest {
     // =====================================================
 
     @Test
-    @DisplayName("TrattaFactory - creazione singola tratta")
+    @DisplayName("TrattaUtil - creazione singola tratta")
     void shouldCreateSingleTratta() {
-        System.out.println("Test: TrattaFactory creazione singola");
+        System.out.println("Test: TrattaUtil creazione singola");
 
         // Test con stazioni enum
-        Tratta trattaFactory1 = TrattaFactory.creaTratta(Stazione.VENEZIA, Stazione.GENOVA);
+        Tratta trattaFactory1 = TrattaUtil.creaTratta(Stazione.VENEZIA, Stazione.GENOVA);
         assertNotNull(trattaFactory1);
         assertEquals(Stazione.VENEZIA, trattaFactory1.getStazionePartenza());
         assertEquals(Stazione.GENOVA, trattaFactory1.getStazioneArrivo());
 
         // Test con nomi stringa
-        Tratta trattaFactory2 = TrattaFactory.creaTratta("Bologna", "Verona");
+        Tratta trattaFactory2 = TrattaUtil.creaTratta("Bologna", "Verona");
         assertNotNull(trattaFactory2);
         assertEquals(Stazione.BOLOGNA, trattaFactory2.getStazionePartenza());
         assertEquals(Stazione.VERONA, trattaFactory2.getStazioneArrivo());
@@ -207,14 +206,14 @@ class TrattaTest {
     }
 
     @Test
-    @DisplayName("TrattaFactory - creazione con nomi invalidi")
+    @DisplayName("TrattaUtil - creazione con nomi invalidi")
     void shouldThrowExceptionForInvalidStationNames() {
-        System.out.println("Test: TrattaFactory validazione nomi");
+        System.out.println("Test: TrattaUtil validazione nomi");
 
         // Test nome stazione inesistente
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> TrattaFactory.creaTratta("StazioneInesistente", "Roma"),
+                () -> TrattaUtil.creaTratta("StazioneInesistente", "Roma"),
                 "Dovrebbe lanciare eccezione per nome stazione inesistente"
         );
         assertTrue(exception.getMessage().contains("non trovata"));
@@ -223,11 +222,11 @@ class TrattaTest {
     }
 
     @Test
-    @DisplayName("TrattaFactory - creazione tutte le tratte")
+    @DisplayName("TrattaUtil - creazione tutte le tratte")
     void shouldCreateAllPossibleTratte() {
-        System.out.println("Test: TrattaFactory tutte le tratte");
+        System.out.println("Test: TrattaUtil tutte le tratte");
 
-        List<Tratta> tutteLeTratte = TrattaFactory.creaTutteLeTratte();
+        List<Tratta> tutteLeTratte = TrattaUtil.creaTutteLeTratte();
 
 
         // Calcolo numero atteso: 12 stazioni * 11 destinazioni = 132 tratte
@@ -259,14 +258,14 @@ class TrattaTest {
     }
 
     @Test
-    @DisplayName("TrattaFactory - ricerca tratta specifica")
+    @DisplayName("TrattaUtil - ricerca tratta specifica")
     void shouldFindSpecificTratta() {
-        System.out.println("Test: TrattaFactory ricerca tratta");
+        System.out.println("Test: TrattaUtil ricerca tratta");
 
-        List<Tratta> tutteLeTratte = TrattaFactory.creaTutteLeTratte();
+        List<Tratta> tutteLeTratte = TrattaUtil.creaTutteLeTratte();
 
         // Test ricerca tratta esistente
-        Tratta trattaTrovata = TrattaFactory.trovaTratta(tutteLeTratte,
+        Tratta trattaTrovata = TrattaUtil.trovaTratta(tutteLeTratte,
                 Stazione.MILANO, Stazione.NAPOLI);
 
         assertNotNull(trattaTrovata, "Dovrebbe trovare la tratta Milano-Napoli");
@@ -274,7 +273,7 @@ class TrattaTest {
         assertEquals(Stazione.NAPOLI, trattaTrovata.getStazioneArrivo());
 
         // Test ricerca tratta inesistente (stazioni uguali)
-        Tratta trattaNonTrovata = TrattaFactory.trovaTratta(tutteLeTratte,
+        Tratta trattaNonTrovata = TrattaUtil.trovaTratta(tutteLeTratte,
                 Stazione.ROMA, Stazione.ROMA);
 
         assertNull(trattaNonTrovata, "Non dovrebbe trovare tratta con stazioni uguali");
@@ -283,20 +282,20 @@ class TrattaTest {
     }
 
     @Test
-    @DisplayName("TrattaFactory - validazione tratte")
+    @DisplayName("TrattaUtil - validazione tratte")
     void shouldValidateTratte() {
-        System.out.println("Test: TrattaFactory validazione");
+        System.out.println("Test: TrattaUtil validazione");
 
         // Test tratte valide
-        assertTrue(TrattaFactory.isTrattaValida(Stazione.ROMA, Stazione.MILANO));
-        assertTrue(TrattaFactory.isTrattaValida(Stazione.NAPOLI, Stazione.TORINO));
+        assertTrue(TrattaUtil.isTrattaValida(Stazione.ROMA, Stazione.MILANO));
+        assertTrue(TrattaUtil.isTrattaValida(Stazione.NAPOLI, Stazione.TORINO));
 
         // Test tratte invalide
-        assertFalse(TrattaFactory.isTrattaValida(null, Stazione.MILANO),
+        assertFalse(TrattaUtil.isTrattaValida(null, Stazione.MILANO),
                 "Tratta con partenza null dovrebbe essere invalida");
-        assertFalse(TrattaFactory.isTrattaValida(Stazione.ROMA, null),
+        assertFalse(TrattaUtil.isTrattaValida(Stazione.ROMA, null),
                 "Tratta con arrivo null dovrebbe essere invalida");
-        assertFalse(TrattaFactory.isTrattaValida(Stazione.ROMA, Stazione.ROMA),
+        assertFalse(TrattaUtil.isTrattaValida(Stazione.ROMA, Stazione.ROMA),
                 "Tratta con stazioni uguali dovrebbe essere invalida");
 
         System.out.println("✅ Validazione tratte funziona correttamente");
@@ -314,7 +313,7 @@ class TrattaTest {
             nomeDestinazione = "Roma"; // Evita stazioni uguali
         }
 
-        Tratta tratta = TrattaFactory.creaTratta(nomePartenza, nomeDestinazione);
+        Tratta tratta = TrattaUtil.creaTratta(nomePartenza, nomeDestinazione);
 
         assertNotNull(tratta);
         assertEquals(nomePartenza, tratta.getStazionePartenza().getNome());
@@ -335,7 +334,7 @@ class TrattaTest {
 
         long startTime = System.currentTimeMillis();
 
-        List<Tratta> tutteLeTratte = TrattaFactory.creaTutteLeTratte();
+        List<Tratta> tutteLeTratte = TrattaUtil.creaTutteLeTratte();
 
         long endTime = System.currentTimeMillis();
         long duration = endTime - startTime;
@@ -415,6 +414,6 @@ class TrattaTest {
         System.out.println("✅ Refactoring Tratta verificato con successo!");
 
         // Stampa statistiche finali
-        TrattaFactory.stampaStatistiche();
+        TrattaUtil.stampaStatistiche();
     }
 }

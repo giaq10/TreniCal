@@ -4,7 +4,7 @@ import it.trenical.common.model.stazioni.Stazione;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TrattaFactory {
+public class TrattaUtil {
 
     public static Tratta creaTratta(Stazione partenza, Stazione arrivo) {
         return new Tratta(partenza, arrivo);
