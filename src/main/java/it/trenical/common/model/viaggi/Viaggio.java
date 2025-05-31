@@ -1,7 +1,9 @@
 package it.trenical.common.model.viaggi;
 
-import it.trenical.common.model.tratte.Tratta;
-import it.trenical.common.model.treni.Treno;
+import it.trenical.common.model.bigliettiEpromozioni.Promozione;
+import it.trenical.common.model.bigliettiEpromozioni.PromozioneStandard;
+import it.trenical.server.tratte.Tratta;
+import it.trenical.server.treni.Treno;
 import it.trenical.common.model.stazioni.Binario;
 import it.trenical.common.model.viaggi.strategy.CalcoloViaggioStrategy;
 import it.trenical.common.model.viaggi.strategy.StrategyFactory;
@@ -38,7 +40,7 @@ public class Viaggio {
     private final LocalDate dataArrivoProgrammata;
     private final Binario binarioPartenza;
 
-    private final double prezzo;
+    private double prezzo;
     private final int durataMinuti;
 
     private LocalTime orarioPartenzaEffettivo;
@@ -158,6 +160,13 @@ public class Viaggio {
     public void cancellaViaggio(String motivo) {
         this.stato = StatoViaggio.CANCELLATO;
         this.motivoCancellazione = motivo;
+    }
+
+    public void applicaPromozione(Promozione promozione) {
+        if (promozione == null) {
+            throw new IllegalArgumentException("Promozione non può essere null");
+        }
+        this.prezzo = promozione.applicaSconto(this.prezzo);
     }
 
     public String getId() { return id; }

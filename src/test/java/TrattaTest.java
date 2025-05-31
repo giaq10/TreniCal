@@ -1,6 +1,6 @@
 import it.trenical.common.model.stazioni.Stazione;
-import it.trenical.common.model.tratte.Tratta;
-import it.trenical.common.model.tratte.TrattaUtil;
+import it.trenical.server.tratte.Tratta;
+import it.trenical.server.tratte.TrattaUtil;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;

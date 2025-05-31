@@ -1,8 +1,8 @@
-package it.trenical.common.model.treni.builder;
+package it.trenical.server.treni.builder;
 
-import it.trenical.common.model.treni.Treno;
-import it.trenical.common.model.treni.TipoTreno;
-import it.trenical.common.model.treni.builder.*;
+import it.trenical.server.treni.Treno;
+import it.trenical.server.treni.TipoTreno;
+import it.trenical.server.treni.builder.*;
 
 public class TrenoDirector {
 

@@ -1,17 +1,22 @@
 import it.trenical.common.model.viaggi.*;
 import it.trenical.common.model.viaggi.strategy.*;
-import it.trenical.common.model.treni.*;
-import it.trenical.common.model.treni.builder.TrenoDirector;
-import it.trenical.common.model.tratte.*;
+import it.trenical.server.treni.ServizioTreno;
+import it.trenical.server.treni.TipoTreno;
+import it.trenical.server.treni.Treno;
+import it.trenical.server.treni.builder.TrenoDirector;
 import it.trenical.common.model.stazioni.*;
+import it.trenical.server.tratte.Tratta;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import it.trenical.common.model.bigliettiEpromozioni.*;
+import it.trenical.common.model.bigliettiEpromozioni.factoryMethod.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 
 /**
  * Test per la classe Viaggio e Strategy Pattern
@@ -424,5 +429,123 @@ class ViaggioTest {
         assertNotEquals(viaggio1.getId(), viaggio2.getId());
         assertNotEquals(viaggio1.getId(), viaggio3.getId());
         assertNotEquals(viaggio2.getId(), viaggio3.getId());
+    }
+
+    @Test
+    @DisplayName("Test applicazione promozioni su viaggio")
+    void testApplicazionePromozioniViaggio() {
+        System.out.println("=== Test Applicazione Promozioni su Viaggio ===");
+
+        // Creazione viaggio di test
+        Treno treno = new Treno("FR001", TipoTreno.STANDARD, 350, EnumSet.noneOf(ServizioTreno.class));
+        Tratta tratta = new Tratta(Stazione.ROMA, Stazione.MILANO);
+        Viaggio viaggioTest = new Viaggio(treno, tratta, LocalDate.now().plusDays(7));
+
+        // Creazione promozioni
+        PromozioneStandard promoStandard = new PromozioneStandard("Sconto Estate", 20.0);
+        PromozioneFedelta promoFedelta = new PromozioneFedelta( "Sconto Fedeltà", 15.0);
+
+        // Prezzo originale
+        double prezzoOriginale = viaggioTest.getPrezzo();
+        System.out.println("Prezzo originale viaggio: €" + String.format("%.2f", prezzoOriginale));
+        System.out.println("Viaggio: " + viaggioTest.getTratta());
+        System.out.println("Promo:"+promoStandard);
+        System.out.println("Promo:"+promoFedelta);
+        System.out.println();
+
+        // ===== TEST 1: Solo Promozione Standard =====
+        System.out.println("--- Test 1: Solo Promozione Standard ---");
+        Viaggio viaggio1 = new Viaggio(treno, tratta, LocalDate.now().plusDays(7));
+        double prezzo1Originale = viaggio1.getPrezzo();
+
+        viaggio1.applicaPromozione(promoStandard);
+        double prezzo1Scontato = viaggio1.getPrezzo();
+        double risparmio1 = prezzo1Originale - prezzo1Scontato;
+
+        System.out.println("Promozione applicata: " + promoStandard.getNome() + " (-" + promoStandard.getSconto() + "%)");
+        System.out.println("Prezzo originale: €" + String.format("%.2f", prezzo1Originale));
+        System.out.println("Prezzo scontato: €" + String.format("%.2f", prezzo1Scontato));
+        System.out.println("Risparmio: €" + String.format("%.2f", risparmio1));
+
+        // Verifica calcolo corretto
+        double scontoAtteso1 = prezzo1Originale * (promoStandard.getSconto() / 100.0);
+        double prezzoAtteso1 = prezzo1Originale - scontoAtteso1;
+        assertEquals(prezzoAtteso1, prezzo1Scontato, 0.01);
+        System.out.println("✅ Calcolo promozione standard corretto");
+        System.out.println();
+
+        // ===== TEST 2: Solo Promozione Fedeltà =====
+        System.out.println("--- Test 2: Solo Promozione Fedeltà ---");
+        Viaggio viaggio2 = new Viaggio(treno, tratta, LocalDate.now().plusDays(7));
+        double prezzo2Originale = viaggio2.getPrezzo();
+
+        viaggio2.applicaPromozione(promoFedelta);
+        double prezzo2Scontato = viaggio2.getPrezzo();
+        double risparmio2 = prezzo2Originale - prezzo2Scontato;
+
+        System.out.println("Promozione applicata: " + promoFedelta.getNome() + " (-" + promoFedelta.getSconto() + "%)");
+        System.out.println("Prezzo originale: €" + String.format("%.2f", prezzo2Originale));
+        System.out.println("Prezzo scontato: €" + String.format("%.2f", prezzo2Scontato));
+        System.out.println("Risparmio: €" + String.format("%.2f", risparmio2));
+
+        // Verifica calcolo corretto
+        double scontoAtteso2 = prezzo2Originale * (promoFedelta.getSconto() / 100.0);
+        double prezzoAtteso2 = prezzo2Originale - scontoAtteso2;
+        assertEquals(prezzoAtteso2, prezzo2Scontato, 0.01);
+        System.out.println("✅ Calcolo promozione fedeltà corretto");
+        System.out.println();
+
+        // ===== TEST 3: Entrambe le Promozioni (cumulative) =====
+        System.out.println("--- Test 3: Entrambe le Promozioni (cumulative) ---");
+        Viaggio viaggio3 = new Viaggio(treno, tratta, LocalDate.now().plusDays(7));
+        double prezzo3Originale = viaggio3.getPrezzo();
+
+        // Prima promozione standard
+        viaggio3.applicaPromozione(promoStandard);
+        double prezzo3DopoStandard = viaggio3.getPrezzo();
+
+        // Poi promozione fedeltà
+        viaggio3.applicaPromozione(promoFedelta);
+        double prezzo3Finale = viaggio3.getPrezzo();
+
+        double risparmioTotale = prezzo3Originale - prezzo3Finale;
+
+        System.out.println("Prezzo originale: €" + String.format("%.2f", prezzo3Originale));
+        System.out.println("Dopo sconto standard (-" + promoStandard.getSconto() + "%): €" + String.format("%.2f", prezzo3DopoStandard));
+        System.out.println("Dopo sconto fedeltà (-" + promoFedelta.getSconto() + "% sul già scontato): €" + String.format("%.2f", prezzo3Finale));
+        System.out.println("Risparmio totale: €" + String.format("%.2f", risparmioTotale));
+
+        // Verifica calcolo cumulativo corretto
+        // Primo sconto: prezzo * (1 - 20/100) = prezzo * 0.8
+        // Secondo sconto: prezzoScontato * (1 - 15/100) = prezzoScontato * 0.85
+        double prezzoAtteso3 = prezzo3Originale * 0.8 * 0.85;
+        assertEquals(prezzoAtteso3, prezzo3Finale, 0.01);
+
+        double percentualeScontoTotale = ((prezzo3Originale - prezzo3Finale) / prezzo3Originale) * 100;
+        System.out.println("Percentuale sconto totale: " + String.format("%.1f", percentualeScontoTotale) + "%");
+        System.out.println("✅ Calcolo promozioni cumulative corretto");
+        System.out.println();
+
+        // ===== TEST 4: Verifica che le promozioni si applicano correttamente =====
+        System.out.println("--- Test 4: Verifiche Aggiuntive ---");
+
+        // Verifica che i prezzi sono effettivamente diminuiti
+        assertTrue(prezzo1Scontato < prezzo1Originale, "Il prezzo con promozione standard deve essere minore dell'originale");
+        assertTrue(prezzo2Scontato < prezzo2Originale, "Il prezzo con promozione fedeltà deve essere minore dell'originale");
+        assertTrue(prezzo3Finale < prezzo3DopoStandard, "Il prezzo finale deve essere minore di quello dopo la prima promozione");
+        assertTrue(prezzo3Finale < prezzo3Originale, "Il prezzo finale deve essere minore dell'originale");
+
+        System.out.println("✅ Tutte le verifiche sui prezzi superate");
+
+        // Test promozione null
+        Viaggio viaggioNull = new Viaggio(treno, tratta, LocalDate.now().plusDays(7));
+        try {
+            viaggioNull.applicaPromozione(null);
+            fail("Doveva lanciare eccezione per promozione null");
+        } catch (IllegalArgumentException e) {
+            System.out.println("✅ Eccezione corretta per promozione null: " + e.getMessage());
+        }
+
+        System.out.println("✅ Test completo delle promozioni su viaggio superato!");
     }
 }

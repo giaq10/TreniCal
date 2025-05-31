@@ -1,6 +1,6 @@
 package it.trenical.common.model.viaggi.strategy;
 
-import it.trenical.common.model.treni.TipoTreno;
+import it.trenical.server.treni.TipoTreno;
 
 public class CalcoloViaggioStandard implements CalcoloViaggioStrategy {
 

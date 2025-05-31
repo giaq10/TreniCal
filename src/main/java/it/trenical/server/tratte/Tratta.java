@@ -1,4 +1,4 @@
-package it.trenical.common.model.tratte;
+package it.trenical.server.tratte;
 
 
 import it.trenical.common.model.stazioni.Stazione;

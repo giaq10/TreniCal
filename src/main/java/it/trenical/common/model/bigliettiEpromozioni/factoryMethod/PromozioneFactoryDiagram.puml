@@ -1,0 +1,50 @@
+@startuml
+package bigliettiEpromozioni.factoryMethod {
+  abstract class PromozioneFactory {
+    + creaPromozione(nome: String, percentualeSconto: double): Promozione
+    + getFactory(tipo: String): PromozioneFactory {static}
+  }
+
+  class PromozioneStandardFactory {
+    + creaPromozione(nome: String, percentualeSconto: double): Promozione
+  }
+
+  class PromozioneFedeltaFactory {
+    + creaPromozione(nome: String, percentualeSconto: double): Promozione
+  }
+}
+
+package bigliettiEpromozioni {
+  abstract class Promozione {
+    - id: String
+    - nome: String
+    - sconto: double
+    + Promozione(nome: String, sconto: double)
+    + generaId(nome: String, sconto: double)
+    + applicaSconto(prezzo: double): double
+    + getTipo(): String
+    + getId(): String
+    + getNome(): String
+    + getSconto(): double
+  }
+
+  class PromozioneStandard {
+    + PromozioneStandard(nome: String, sconto: double)
+    + getTipo(): String
+  }
+
+  class PromozioneFedelta {
+    + PromozioneFedelta(nome: String, sconto: double)
+    + getTipo(): String
+  }
+}
+
+PromozioneStandardFactory --|> PromozioneFactory
+PromozioneFedeltaFactory --|> PromozioneFactory
+
+PromozioneStandard --|> Promozione
+PromozioneFedelta --|> Promozione
+
+PromozioneStandardFactory ..> PromozioneStandard : creaPromozione()
+PromozioneFedeltaFactory ..> PromozioneFedelta : creaPromozione()
+@enduml

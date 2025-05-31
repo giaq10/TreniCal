@@ -1,7 +1,7 @@
-package it.trenical.common.model.treni.builder;
+package it.trenical.server.treni.builder;
 
-import it.trenical.common.model.treni.ServizioTreno;
-import it.trenical.common.model.treni.TipoTreno;
+import it.trenical.server.treni.ServizioTreno;
+import it.trenical.server.treni.TipoTreno;
 
 public class TrenoStandardBuilder extends TrenoBuilder {
 

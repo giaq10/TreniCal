@@ -1,4 +1,4 @@
-package it.trenical.common.model.treni;
+package it.trenical.server.treni;
 
 public enum ServizioTreno {
     ALTA_VELOCITA("Alta Velocità"),

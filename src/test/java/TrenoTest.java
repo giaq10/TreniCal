@@ -1,5 +1,7 @@
-import it.trenical.common.model.treni.*;
-import it.trenical.common.model.treni.builder.*;
+import it.trenical.server.treni.ServizioTreno;
+import it.trenical.server.treni.TipoTreno;
+import it.trenical.server.treni.Treno;
+import it.trenical.server.treni.builder.TrenoDirector;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 

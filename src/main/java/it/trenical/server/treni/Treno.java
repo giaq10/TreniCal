@@ -1,4 +1,4 @@
-package it.trenical.common.model.treni;
+package it.trenical.server.treni;
 
 import java.util.EnumSet;
 import java.util.Objects;
