@@ -1,4 +1,4 @@
-package it.trenical.common.model.viaggi.strategy;
+package it.trenical.common.viaggi.strategy;
 
 import it.trenical.server.treni.TipoTreno;
 /**

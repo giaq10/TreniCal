@@ -1,6 +1,6 @@
-package it.trenical.common.model.bigliettiEpromozioni.factoryMethod;
+package it.trenical.common.promozioni.factoryMethod;
 
-import it.trenical.common.model.bigliettiEpromozioni.*;
+import it.trenical.common.promozioni.Promozione;
 
 public abstract class PromozioneFactory {
     public abstract Promozione creaPromozione(String nome, double percentualeSconto);

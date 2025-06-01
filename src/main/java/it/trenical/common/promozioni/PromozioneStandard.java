@@ -1,4 +1,4 @@
-package it.trenical.common.model.bigliettiEpromozioni;
+package it.trenical.common.promozioni;
 
 public class PromozioneStandard extends Promozione{
     public PromozioneStandard(String nome, double sconto) {

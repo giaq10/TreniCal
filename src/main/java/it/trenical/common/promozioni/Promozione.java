@@ -1,4 +1,4 @@
-package it.trenical.common.model.bigliettiEpromozioni;
+package it.trenical.common.promozioni;
 
 import java.util.Objects;
 

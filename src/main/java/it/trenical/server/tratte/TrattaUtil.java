@@ -1,6 +1,6 @@
 package it.trenical.server.tratte;
 
-import it.trenical.common.model.stazioni.Stazione;
+import it.trenical.common.stazioni.Stazione;
 import java.util.ArrayList;
 import java.util.List;
 

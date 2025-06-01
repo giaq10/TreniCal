@@ -1,4 +1,4 @@
-package it.trenical.common.model.stazioni;
+package it.trenical.common.stazioni;
 
 public enum Stazione {
     REGGIO_CALABRIA(0, "Reggio Calabria"),

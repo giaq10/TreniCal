@@ -1,4 +1,4 @@
-package it.trenical.common.model.viaggi;
+package it.trenical.common.viaggi;
 
 public enum StatoViaggio {
     PROGRAMMATO("Programmato"),
