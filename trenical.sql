@@ -1,11 +1,3 @@
--- ===================================
--- RESET COMPLETO DATABASE TRENICAL
--- ===================================
-
--- 1. ELIMINA TUTTE LE TABELLE
-
--- 2. RICREA TUTTO CON SCHEMA AGGIORNATO
-
 -- TABELLA CLIENTI
 CREATE TABLE IF NOT EXISTS clienti (
     email VARCHAR(255) PRIMARY KEY,
@@ -14,7 +6,7 @@ CREATE TABLE IF NOT EXISTS clienti (
     data_registrazione DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- TABELLA VIAGGI (AGGIORNATA CON TEXT PER DATE)
+-- TABELLA VIAGGI
 CREATE TABLE IF NOT EXISTS viaggi (
     id VARCHAR(255) PRIMARY KEY,
     codice_treno VARCHAR(50) NOT NULL,
@@ -57,10 +49,6 @@ CREATE TABLE IF NOT EXISTS biglietti (
     FOREIGN KEY (viaggio_id) REFERENCES viaggi(id) ON DELETE CASCADE
 );
 
--- ===================================
--- DATI DI TEST
--- ===================================
-
 -- Clienti di test
 INSERT OR IGNORE INTO clienti (email, nome, abbonamento_fedelta) VALUES 
 ('mario.rossi@email.com', 'Mario Rossi', 1),
@@ -92,18 +80,12 @@ INSERT OR IGNORE INTO viaggi (
  '2025-06-17', '14:30', '16:15', '2025-06-17',
  25.00, 105, 450, 450, 'PROGRAMMATO', 'Binario 3', 105);
 
--- ===================================
--- INDICI PER PERFORMANCE
--- ===================================
 
 CREATE INDEX IF NOT EXISTS idx_viaggi_data ON viaggi(data_viaggio);
 CREATE INDEX IF NOT EXISTS idx_viaggi_stazioni ON viaggi(stazione_partenza, stazione_arrivo);
 CREATE INDEX IF NOT EXISTS idx_biglietti_cliente ON biglietti(cliente_email);
 CREATE INDEX IF NOT EXISTS idx_biglietti_viaggio ON biglietti(viaggio_id);
 
--- ===================================
--- VERIFICA FINALE
--- ===================================
 
 SELECT 'RESET COMPLETATO!' as messaggio;
 SELECT COUNT(*) as clienti_inseriti FROM clienti;
