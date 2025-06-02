@@ -1,3 +1,5 @@
+package common;
+
 import it.trenical.common.promozioni.PromozioneFedelta;
 import it.trenical.common.promozioni.PromozioneStandard;
 import it.trenical.common.stazioni.Stazione;

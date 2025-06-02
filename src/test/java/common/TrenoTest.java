@@ -1,3 +1,5 @@
+package common;
+
 import it.trenical.server.treni.ServizioTreno;
 import it.trenical.server.treni.TipoTreno;
 import it.trenical.server.treni.Treno;

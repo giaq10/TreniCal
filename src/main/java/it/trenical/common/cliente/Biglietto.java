@@ -46,9 +46,11 @@ public class Biglietto implements Cloneable {
         if (nominativo == null) {
             return null; // Non genera ID se non c'è nominativo
         }
-        String input = String.format("%s_%s",
+        String input = String.format("%s_%s_%d",
                 nominativo.replaceAll("\\s+", ""),
-                viaggio.getId());
+                viaggio.getId(),
+                System.currentTimeMillis() // Timestamp unico!
+        );
         int hash = Math.abs(input.hashCode());
         return String.format("BGT_%08d", hash % 100000000);
     }

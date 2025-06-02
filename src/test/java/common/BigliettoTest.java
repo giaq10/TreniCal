@@ -1,3 +1,5 @@
+package common;
+
 import it.trenical.common.cliente.Biglietto;
 import it.trenical.common.viaggi.Viaggio;
 import it.trenical.server.treni.Treno;
@@ -15,6 +17,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test completo per la classe Biglietto e pattern Prototype
@@ -319,7 +322,7 @@ public class BigliettoTest {
 
     @Test
     @DisplayName("Test equals e hashCode")
-    void testEqualsEHashCode() {
+    void testEqualsEHashCode() throws InterruptedException {
         System.out.println("=== Test Equals e HashCode ===");
 
         // Crea biglietti con stesso nominativo
@@ -327,15 +330,16 @@ public class BigliettoTest {
         Biglietto biglietto2 = new Biglietto(viaggio);
 
         biglietto1.setNominativo("Mario Rossi");
+        TimeUnit.SECONDS.sleep(1);
         biglietto2.setNominativo("Mario Rossi");
 
         System.out.println("Biglietto 1: " + biglietto1.toString());
         System.out.println("Biglietto 2: " + biglietto2.toString());
 
-        // Con stesso nominativo + viaggio dovrebbero avere stesso ID
-        assertEquals(biglietto1.getId(), biglietto2.getId());
-        assertEquals(biglietto1, biglietto2);
-        assertEquals(biglietto1.hashCode(), biglietto2.hashCode());
+        // Con stesso nominativo + viaggio dovrebbe generare diverso ID con la gestione dei DB
+        assertNotEquals(biglietto1.getId(), biglietto2.getId());
+        assertNotEquals(biglietto1, biglietto2);
+        assertNotEquals(biglietto1.hashCode(), biglietto2.hashCode());
 
         System.out.println("✅ Biglietti con stesso nominativo sono equals");
 

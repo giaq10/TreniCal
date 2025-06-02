@@ -1,3 +1,5 @@
+package common;
+
 import it.trenical.common.cliente.Cliente;
 import it.trenical.common.cliente.Biglietto;
 import it.trenical.common.viaggi.Viaggio;

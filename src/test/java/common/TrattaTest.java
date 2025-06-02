@@ -1,3 +1,5 @@
+package common;
+
 import it.trenical.common.stazioni.Stazione;
 import it.trenical.server.tratte.Tratta;
 import it.trenical.server.tratte.TrattaUtil;

@@ -30,7 +30,7 @@ public class Viaggio {
             LocalTime.of(15, 30)  // 15:30
     );
 
-    private final String id;
+    private String id;
     private final Treno treno;
     private final Tratta tratta;
     private final LocalDate dataViaggio;
