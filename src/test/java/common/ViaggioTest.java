@@ -1,5 +1,6 @@
 package common;
 
+import it.trenical.common.cliente.Biglietto;
 import it.trenical.common.promozioni.PromozioneFedelta;
 import it.trenical.common.promozioni.PromozioneStandard;
 import it.trenical.common.stazioni.Stazione;
@@ -19,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
-import java.util.EnumSet;
+import java.util.*;
 
 /**
  * Test per la classe Viaggio e Strategy Pattern
@@ -274,6 +275,161 @@ class ViaggioTest {
                 ", Posti occupati: " + viaggio.getPostiOccupati());
         assertEquals(postiIniziali, viaggio.getPostiDisponibili());
         assertEquals(0, viaggio.getPostiOccupati());
+    }
+
+    @Test
+    @DisplayName("Test biglietto e clone con posti limitati")
+    void testBigliettoClonePostiLimitati() {
+        System.out.println("=== Test Biglietto e Clone Posti Limitati ===");
+
+        Treno trenoBusiness = new Treno("BUS001", TipoTreno.BUSINESS, 250, EnumSet.noneOf(ServizioTreno.class));
+        Tratta tratta = new Tratta(Stazione.ROMA, Stazione.MILANO);
+        Viaggio viaggio = new Viaggio(trenoBusiness, tratta, LocalDate.now().plusDays(7));
+
+        System.out.println("Viaggio creato: " + viaggio.toString());
+        System.out.println("Posti iniziali: " + viaggio.getPostiDisponibili());
+
+        for (int i = 0; i < trenoBusiness.getPostiTotali() - 1; i++) {
+            boolean prenotato = viaggio.prenotaPosto();
+            assertTrue(prenotato, "Prenotazione " + (i+1) + " dovrebbe riuscire");
+        }
+
+        System.out.println("Dopo " + (trenoBusiness.getPostiTotali() - 1) + " prenotazioni:");
+        System.out.println("- Posti disponibili: " + viaggio.getPostiDisponibili());
+        System.out.println("- Posti occupati: " + viaggio.getPostiOccupati());
+        System.out.println("- Viaggio disponibile: " + viaggio.isDisponibile());
+
+        // Assert - Verifica che ci sia ancora 1 posto
+        assertEquals(1, viaggio.getPostiDisponibili(), "Dovrebbe esserci 1 posto disponibile");
+        assertEquals(249, viaggio.getPostiOccupati(), "Dovrebbero essere occupati 249 posti");
+        assertTrue(viaggio.isDisponibile(), "Viaggio dovrebbe essere ancora disponibile");
+
+        // Act - Crea biglietto con ultimo posto disponibile (dovrebbe funzionare)
+        System.out.println("\nCreazione biglietto con ultimo posto disponibile:");
+        Biglietto biglietto = new Biglietto(viaggio);
+        biglietto.setNominativo("Ultimo Cliente Fortunato");
+
+        System.out.println("Biglietto creato: " + biglietto.toString());
+        System.out.println("Posti dopo creazione biglietto: " + viaggio.getPostiDisponibili());
+
+        // Assert - Verifica che il posto sia stato prenotato
+        assertEquals(0, viaggio.getPostiDisponibili(), "Non dovrebbero più esserci posti disponibili");
+        assertEquals(250, viaggio.getPostiOccupati(), "Tutti i 250 posti dovrebbero essere occupati");
+        assertFalse(viaggio.isDisponibile(), "Viaggio non dovrebbe più essere disponibile");
+        assertTrue(biglietto.isCompleto(), "Biglietto dovrebbe essere completo");
+
+        // Act - Tentativo di clone (dovrebbe fallire)
+        System.out.println("\nTentativo di clone con posti esauriti:");
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            biglietto.clone();
+        }, "Il clone dovrebbe fallire quando non ci sono posti disponibili");
+
+        System.out.println("Eccezione clone (come atteso): " + exception.getMessage());
+
+        // Act - Tentativo di creare un nuovo biglietto (dovrebbe fallire)
+        System.out.println("\nTentativo creazione nuovo biglietto per viaggio esaurito:");
+
+        Exception exception2 = assertThrows(IllegalArgumentException.class, () -> {
+            new Biglietto(viaggio);
+        }, "La creazione di nuovo biglietto dovrebbe fallire quando posti esauriti");
+
+        System.out.println("Eccezione nuovo biglietto (come atteso): " + exception2.getMessage());
+
+        // Assert finale - Verifica messaggi di errore
+        assertTrue(exception.getMessage().contains("Viaggio non disponibile") ||
+                        exception.getMessage().contains("Posti non disponibili"),
+                "Messaggio di errore del clone dovrebbe indicare il problema");
+
+        assertTrue(exception2.getMessage().contains("Viaggio non disponibile") ||
+                        exception2.getMessage().contains("Posti non disponibili"),
+                "Messaggio di errore del nuovo biglietto dovrebbe indicare il problema");
+
+        System.out.println("✅ Test posti limitati completato con successo");
+    }
+
+    @Test
+    @DisplayName("Test acquisto multiplo con clone - limite posti esatto")
+    void testAcquistoMultiploConCloneLimitePosti() {
+        System.out.println("=== Test Acquisto Multiplo Con Clone - Limite Posti ===");
+
+        Treno trenoBusiness = new Treno("BUS001", TipoTreno.BUSINESS, 250, EnumSet.noneOf(ServizioTreno.class));
+        Tratta tratta = new Tratta(Stazione.ROMA, Stazione.MILANO);
+        Viaggio viaggio = new Viaggio(trenoBusiness, tratta, LocalDate.now().plusDays(7));
+
+        System.out.println("Viaggio creato: " + viaggio.toString());
+        System.out.println("Posti iniziali: " + viaggio.getPostiDisponibili());
+
+        int postiDaLasciare = 5;
+        int prenotazioniIniziali = trenoBusiness.getPostiTotali() - postiDaLasciare;
+
+        for (int i = 0; i < prenotazioniIniziali; i++) {
+            boolean prenotato = viaggio.prenotaPosto();
+            assertTrue(prenotato, "Prenotazione " + (i+1) + " dovrebbe riuscire");
+        }
+
+        System.out.println("Dopo " + prenotazioniIniziali + " prenotazioni:");
+        System.out.println("- Posti disponibili: " + viaggio.getPostiDisponibili());
+        System.out.println("- Posti occupati: " + viaggio.getPostiOccupati());
+        System.out.println("- Viaggio disponibile: " + viaggio.isDisponibile());
+
+        assertEquals(postiDaLasciare, viaggio.getPostiDisponibili(),
+                "Dovrebbero esserci esattamente " + postiDaLasciare + " posti disponibili");
+        assertTrue(viaggio.isDisponibile(), "Viaggio dovrebbe essere ancora disponibile");
+
+        System.out.println("\n1 ACQUISTO - Creazione biglietto base:");
+        Biglietto bigliettoBase = new Biglietto(viaggio);
+        bigliettoBase.setNominativo("Passeggero 1");
+
+        System.out.println("Biglietto base creato: " + bigliettoBase.getId());
+        System.out.println("   Posti rimasti: " + viaggio.getPostiDisponibili());
+
+        assertEquals(4, viaggio.getPostiDisponibili(), "Dovrebbero rimanere 4 posti");
+
+        List<Biglietto> bigliettiClonati = new ArrayList<>();
+        int acquistiRiusciti = 1; // Già fatto il primo
+
+        for (int i = 0; i < 6; i++) {
+            int numeroTentativo = i + 2; // Acquisto numero 2, 3, 4, 5, 6
+            System.out.println("\n" + numeroTentativo + " ACQUISTO - Tentativo clone " + (i+1) + ":");
+
+            try {
+                Biglietto clone = bigliettoBase.clone();
+                clone.setNominativo("Passeggero " + numeroTentativo);
+                bigliettiClonati.add(clone);
+                acquistiRiusciti++;
+
+                System.out.println("Clone " + (i+1) + " creato: " + clone.getId());
+                System.out.println("   Posti rimasti: " + viaggio.getPostiDisponibili());
+
+            } catch (IllegalArgumentException e) {
+                System.out.println("Clone " + (i+1) + " FALLITO: " + e.getMessage());
+                System.out.println("   Posti rimasti: " + viaggio.getPostiDisponibili());
+
+
+            }
+        }
+
+        System.out.println("Acquisti riusciti: " + acquistiRiusciti + "/7 tentativi");
+        System.out.println("Biglietti totali creati: " + (1 + bigliettiClonati.size()));
+        System.out.println("Posti finali disponibili: " + viaggio.getPostiDisponibili());
+        System.out.println("Posti finali occupati: " + viaggio.getPostiOccupati());
+
+        assertEquals(5, acquistiRiusciti, "Dovrebbero essere riusciti esattamente 5 acquisti");
+        assertEquals(4, bigliettiClonati.size(), "Dovrebbero essere stati creati 4 clone");
+        assertEquals(0, viaggio.getPostiDisponibili(), "Non dovrebbero più esserci posti");
+        assertEquals(250, viaggio.getPostiOccupati(), "Tutti i posti dovrebbero essere occupati");
+
+        List<String> ids = new ArrayList<>();
+        ids.add(bigliettoBase.getId());
+        bigliettiClonati.forEach(b -> ids.add(b.getId()));
+        System.out.println(ids);
+
+        Set<String> idsUnici = new HashSet<>(ids);
+        System.out.println(idsUnici);
+        assertEquals(ids.size(), idsUnici.size(), "Tutti i biglietti dovrebbero avere ID univoci");
+
+        System.out.println("✅ Test acquisto multiplo con limite posti completato con successo!");
     }
 
     // ===== TEST GESTIONE STATO E RITARDI =====

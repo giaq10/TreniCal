@@ -22,10 +22,12 @@ public class Biglietto implements Cloneable {
      * @param viaggio Viaggio per cui è acquistato il biglietto
      */
     public Biglietto(Viaggio viaggio) {
-
-        if (viaggio == null) {
+        if (viaggio == null)
             throw new IllegalArgumentException("Viaggio obbligatorio");
-        }
+        if(!viaggio.isDisponibile())
+            throw new IllegalArgumentException("Viaggio non disponibile");
+        if(!viaggio.prenotaPosto())
+            throw new IllegalArgumentException("Posti non disponibili per il viaggio");
         this.viaggio = viaggio;
         this.dataAcquisto = LocalDateTime.now();
         this.id = generaIdBiglietto();
@@ -58,7 +60,10 @@ public class Biglietto implements Cloneable {
     @Override
     public Biglietto clone() {
         try {
+            if(!viaggio.hasPostiDisponibili())
+                throw new IllegalArgumentException("Viaggio non disponibile per acquisti multipli");
             Biglietto clonato = (Biglietto) super.clone();
+            viaggio.prenotaPosto();
             return clonato;
         } catch (CloneNotSupportedException e) {
             // Non dovrebbe mai succedere dato che implementiamo Cloneable

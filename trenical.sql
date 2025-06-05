@@ -1,6 +1,12 @@
+DROP TABLE IF EXISTS biglietti;
+DROP TABLE IF EXISTS viaggi;
+DROP TABLE IF EXISTS promozioni;
+DROP TABLE IF EXISTS clienti;
+
 -- TABELLA CLIENTI
 CREATE TABLE IF NOT EXISTS clienti (
     email VARCHAR(255) PRIMARY KEY,
+    password VARCHAR(255) NOT NULL,
     nome VARCHAR(255) NOT NULL,
     abbonamento_fedelta BOOLEAN DEFAULT 0,
     data_registrazione DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -50,10 +56,10 @@ CREATE TABLE IF NOT EXISTS biglietti (
 );
 
 -- Clienti di test
-INSERT OR IGNORE INTO clienti (email, nome, abbonamento_fedelta) VALUES 
-('mario.rossi@email.com', 'Mario Rossi', 1),
-('anna.verdi@email.com', 'Anna Verdi', 0),
-('luca.bianchi@email.com', 'Luca Bianchi', 1);
+INSERT OR IGNORE INTO clienti (email, password, nome, abbonamento_fedelta) VALUES
+('mario.rossi@email.com', '123456', 'Mario Rossi', 1),
+('anna.verdi@email.com', 'abcdef', 'Anna Verdi', 0),
+('luca.bianchi@email.com', 'federicogay', 'Luca Bianchi', 1);
 
 -- Promozioni di test
 INSERT OR IGNORE INTO promozioni (id, nome, tipo, percentuale_sconto) VALUES 

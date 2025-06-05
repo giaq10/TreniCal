@@ -34,7 +34,7 @@ public class ClienteTest {
     @BeforeEach
     void setUp() {
         // Setup per test biglietti
-        cliente = new Cliente("mario@test.com", "Mario Rossi");
+        cliente = new Cliente("mario@test.com", "federicchio","Mario Rossi");
 
         // Crea viaggi di test
         Treno treno1 = new Treno("FR001", TipoTreno.STANDARD, 350, EnumSet.noneOf(ServizioTreno.class));
@@ -61,7 +61,7 @@ public class ClienteTest {
         System.out.println("=== Test Creazione Cliente Valido ===");
 
         // Test costruttore completo
-        Cliente cliente1 = new Cliente("mario.rossi@email.com", "Mario Rossi", true);
+        Cliente cliente1 = new Cliente("mario.rossi@email.com", "federicchio","Mario Rossi", true);
 
         assertEquals("mario.rossi@email.com", cliente1.getEmail());
         assertEquals("Mario Rossi", cliente1.getNome());
@@ -71,7 +71,7 @@ public class ClienteTest {
         System.out.println("Cliente 1: " + cliente1.toString());
 
         // Test costruttore semplificato (senza abbonamento)
-        Cliente cliente2 = new Cliente("anna.verdi@test.it", "Anna Verdi");
+        Cliente cliente2 = new Cliente("anna.verdi@test.it","federicchio", "Anna Verdi");
 
         assertEquals("anna.verdi@test.it", cliente2.getEmail());
         assertEquals("Anna Verdi", cliente2.getNome());
@@ -100,7 +100,7 @@ public class ClienteTest {
         System.out.println("Test email valide:");
         for (String email : emailValide) {
             try {
-                Cliente clienteTest = new Cliente(email, "Test User");
+                Cliente clienteTest = new Cliente(email,"federicchio", "Test User");
                 System.out.println("✅ " + email + " - VALIDA");
                 assertEquals(email.toLowerCase(), clienteTest.getEmail()); // Verifica normalizzazione
             } catch (Exception e) {
@@ -127,7 +127,7 @@ public class ClienteTest {
         System.out.println("\nTest email non valide:");
         for (String email : emailNonValide) {
             try {
-                new Cliente(email, "Test User");
+                new Cliente(email,"federicchio", "Test User");
                 fail("Email non valida accettata: " + email);
             } catch (IllegalArgumentException e) {
                 System.out.println("✅ " + email + " - RIFIUTATA: " + e.getMessage());
@@ -145,25 +145,43 @@ public class ClienteTest {
 
         // Test email null
         Exception exception1 = assertThrows(IllegalArgumentException.class, () -> {
-            new Cliente(null, "Test User");
+            new Cliente(null, "federicchio","Test User");
         });
         System.out.println("✅ Email null: " + exception1.getMessage());
 
+        //Test password null
+        Exception exception5 = assertThrows(IllegalArgumentException.class, () -> {
+            new Cliente("fedrico@micio.ciccio", null,"Test User");
+        });
+        System.out.println("Password null: " + exception5.getMessage());
+
+        //Test password minore di 6
+        Exception exception6 = assertThrows(IllegalArgumentException.class, () -> {
+            new Cliente("fedrico@micio.ciccio", "david","Test User");
+        });
+        System.out.println("Password piccola: " + exception6.getMessage());
+
+        //Test password vuota
+        Exception exception7 = assertThrows(IllegalArgumentException.class, () -> {
+            new Cliente("fedrico@micio.ciccio", "          ","Test User");
+        });
+        System.out.println("Password piccola: " + exception6.getMessage());
+
         // Test nome null
         Exception exception2 = assertThrows(IllegalArgumentException.class, () -> {
-            new Cliente("test@email.com", null);
+            new Cliente("test@email.com","federicchio", null);
         });
         System.out.println("✅ Nome null: " + exception2.getMessage());
 
         // Test nome vuoto
         Exception exception3 = assertThrows(IllegalArgumentException.class, () -> {
-            new Cliente("test@email.com", "");
+            new Cliente("test@email.com","federicchio", "");
         });
         System.out.println("✅ Nome vuoto: " + exception3.getMessage());
 
         // Test nome solo spazi
         Exception exception4 = assertThrows(IllegalArgumentException.class, () -> {
-            new Cliente("test@email.com", "   ");
+            new Cliente("test@email.com","federicchio", "   ");
         });
         System.out.println("✅ Nome solo spazi: " + exception4.getMessage());
 
@@ -177,7 +195,7 @@ public class ClienteTest {
         System.out.println("=== Test Gestione Abbonamento Fedeltà ===");
 
         // Cliente iniziale senza abbonamento
-        Cliente clienteTest = new Cliente("test@email.com", "Test User", false);
+        Cliente clienteTest = new Cliente("test@email.com", "federicchio","Test User", false);
 
         System.out.println("Cliente iniziale: " + clienteTest.toString());
         assertFalse(clienteTest.hasAbbonamentoFedelta());
@@ -196,7 +214,7 @@ public class ClienteTest {
         assertEquals("Cliente Standard", clienteTest.getStatusAbbonamento());
 
         // Test cliente che inizia già abbonato
-        Cliente clienteAbbonato = new Cliente("vip@email.com", "Cliente VIP", true);
+        Cliente clienteAbbonato = new Cliente("vip@email.com","federicchio", "Cliente VIP", true);
         System.out.println("Cliente VIP: " + clienteAbbonato.toString());
         assertTrue(clienteAbbonato.hasAbbonamentoFedelta());
 
@@ -218,7 +236,7 @@ public class ClienteTest {
 
         System.out.println("Test normalizzazione email:");
         for (String emailInput : emailVarianti) {
-            Cliente clienteTest = new Cliente(emailInput, "Test User", false);
+            Cliente clienteTest = new Cliente(emailInput, "Test User", "federicchio",false);
             System.out.println("Input: '" + emailInput + "' → Output: '" + clienteTest.getEmail() + "'");
             assertEquals("test@email.com", clienteTest.getEmail());
         }
@@ -232,12 +250,12 @@ public class ClienteTest {
     void testEqualsEHashCode() {
         System.out.println("=== Test Equals e HashCode ===");
 
-        Cliente cliente1 = new Cliente("test@email.com", "Mario Rossi", true);
-        Cliente cliente2 = new Cliente("test@email.com", "Luigi Verdi", false); // Stessa email, dati diversi
-        Cliente cliente3 = new Cliente("altro@email.com", "Mario Rossi", true); // Email diversa
+        Cliente cliente1 = new Cliente("test@email.com", "federicchio","Mario Rossi", true);
+        Cliente cliente2 = new Cliente("test@email.com", "miaoFedee","Luigi Verdi", false); // Stessa email, dati diversi
+        Cliente cliente3 = new Cliente("altro@email.com", "federicchio","Mario Rossi", true); // Email diversa
 
         System.out.println("Cliente 1: " + cliente1.toString());
-        System.out.println("Cliente 2: " + cliente2.toString() + " (stessa email)");
+        System.out.println("Cliente 2: " + cliente2.toString() + " (stessa email, password non importa)");
         System.out.println("Cliente 3: " + cliente3.toString() + " (email diversa)");
 
         // Test equals con stessa email
@@ -267,8 +285,8 @@ public class ClienteTest {
         System.out.println("=== Test Scenario Completo ===");
 
         // Creazione di diversi clienti
-        Cliente clienteStandard = new Cliente("mario@email.com", "Mario Rossi");
-        Cliente clienteVIP = new Cliente("anna@email.com", "Anna Verdi", true);
+        Cliente clienteStandard = new Cliente("mario@email.com","federicchio", "Mario Rossi");
+        Cliente clienteVIP = new Cliente("anna@email.com", "federicchio","Anna Verdi", true);
 
         System.out.println("Clienti creati:");
         System.out.println("- " + clienteStandard.toString());
@@ -284,7 +302,7 @@ public class ClienteTest {
         assertTrue(clienteVIP.hasAbbonamentoFedelta());
 
         // Test che email sia sempre la chiave
-        Cliente clienteDuplicato = new Cliente("mario@email.com", "Mario Bianchi");
+        Cliente clienteDuplicato = new Cliente("mario@email.com","federicchio", "Mario Bianchi");
         assertEquals(clienteStandard, clienteDuplicato);
         System.out.println("✅ Stesso cliente anche con nome diverso (email = chiave)");
 
@@ -470,7 +488,7 @@ public class ClienteTest {
         System.out.println();
 
         // 1. Creazione cliente
-        Cliente mario = new Cliente("mario.famiglia@email.com", "Mario Rossi");
+        Cliente mario = new Cliente("mario.famiglia@email.com","federicchio", "Mario Rossi");
         mario.attivaAbbonamentoFedelta(); // Cliente fedeltà
 
         System.out.println("1. Cliente creato: " + mario.toString());

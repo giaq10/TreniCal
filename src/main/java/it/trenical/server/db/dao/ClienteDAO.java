@@ -27,16 +27,17 @@ public class ClienteDAO {
      */
     public boolean save(Cliente cliente) {
         String sql = """
-            INSERT INTO clienti (email, nome, abbonamento_fedelta) 
-            VALUES (?, ?, ?)
+            INSERT INTO clienti (email, password, nome, abbonamento_fedelta) 
+            VALUES (?, ?, ?, ?)
             """;
 
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, cliente.getEmail());
-            stmt.setString(2, cliente.getNome());
-            stmt.setBoolean(3, cliente.hasAbbonamentoFedelta());
+            stmt.setString(2, cliente.getPassword());
+            stmt.setString(3, cliente.getNome());
+            stmt.setBoolean(4, cliente.hasAbbonamentoFedelta());
 
             int rowsAffected = stmt.executeUpdate();
 
@@ -112,7 +113,7 @@ public class ClienteDAO {
     public boolean update(Cliente cliente) {
         String sql = """
             UPDATE clienti 
-            SET nome = ?, abbonamento_fedelta = ? 
+            SET nome = ?, password = ?, abbonamento_fedelta = ? 
             WHERE email = ?
             """;
 
@@ -120,8 +121,9 @@ public class ClienteDAO {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, cliente.getNome());
-            stmt.setBoolean(2, cliente.hasAbbonamentoFedelta());
-            stmt.setString(3, cliente.getEmail());
+            stmt.setString(2, cliente.getPassword());
+            stmt.setBoolean(3, cliente.hasAbbonamentoFedelta());
+            stmt.setString(4, cliente.getEmail());
 
             int rowsAffected = stmt.executeUpdate();
 
@@ -243,9 +245,23 @@ public class ClienteDAO {
      */
     private Cliente mapResultSetToCliente(ResultSet rs) throws SQLException {
         String email = rs.getString("email");
+        String password = rs.getString("password");
         String nome = rs.getString("nome");
         boolean abbonamentoFedelta = rs.getBoolean("abbonamento_fedelta");
 
-        return new Cliente(email, nome, abbonamentoFedelta);
+        return new Cliente(email, password, nome, abbonamentoFedelta);
+    }
+
+    public Optional<Cliente> autenticaCliente(String email, String password) {
+        Optional<Cliente> clienteOpt = findByEmail(email);
+
+        if (clienteOpt.isPresent()) {
+            Cliente cliente = clienteOpt.get();
+            if (cliente.autenticaPassword(password)) {
+                return Optional.of(cliente);
+            }
+        }
+
+        return Optional.empty();
     }
 }

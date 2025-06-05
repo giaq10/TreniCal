@@ -7,6 +7,7 @@ import java.util.Objects;
 
 public class Cliente {
     private final String email;
+    private String password;
     private String nome;
     private boolean abbonamentoFedelta;
     private final List<Biglietto> bigliettiAcquistati;
@@ -17,13 +18,15 @@ public class Cliente {
      * @param nome Nome del cliente
      * @param abbonamentoFedelta Se il cliente ha l'abbonamento fedeltà
      */
-    public Cliente(String email, String nome, boolean abbonamentoFedelta) {
+    public Cliente(String email, String password ,String nome, boolean abbonamentoFedelta) {
         if (!isEmailValida(email))
             throw new IllegalArgumentException("Email non valida");
+        if (password == null || password.trim().isEmpty() || password.length()<6)
+            throw new IllegalArgumentException("Password obbligatoria o troppo corta");
         if (nome == null || nome.trim().isEmpty())
             throw new IllegalArgumentException("Nome obbligatorio");
-
         this.email = email.toLowerCase();
+        this.password = password;
         this.nome = nome.trim();
         this.abbonamentoFedelta = abbonamentoFedelta;
         this.bigliettiAcquistati = new ArrayList<>();
@@ -33,8 +36,8 @@ public class Cliente {
      * @param email Email del cliente
      * @param nome Nome del cliente
      */
-    public Cliente(String email, String nome) {
-        this(email, nome, false);
+    public Cliente(String email,String password, String nome) {
+        this(email, password, nome, false);
     }
 
     private boolean isEmailValida(String email) {
@@ -43,6 +46,12 @@ public class Cliente {
         }
         String emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\\.[a-zA-Z]{2,}$";
         return email.matches(emailRegex);
+    }
+
+    public void modificaPassword(String password) {this.password = password;}
+    public boolean autenticaPassword(String password) {
+        if(password==null) return false;
+        return password.equals(this.password);
     }
 
     public void attivaAbbonamentoFedelta() {
@@ -119,6 +128,8 @@ public class Cliente {
         return email;
     }
 
+    public String getPassword() {return password;}
+
     public String getNome() {
         return nome;
     }
@@ -164,7 +175,7 @@ public class Cliente {
 
     @Override
     public String toString() {
-        return String.format("Cliente{email='%s', nome='%s', %s}",
-                email, nome, getStatusAbbonamento());
+        return String.format("Cliente{email='%s', password='%s', nome='%s', %s}",
+                email, password, nome, getStatusAbbonamento());
     }
 }

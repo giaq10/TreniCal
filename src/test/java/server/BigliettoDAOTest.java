@@ -63,7 +63,7 @@ class BigliettoDAOTest {
         System.out.println("Creazione dati di test...");
 
         // Cliente di test
-        clienteTest = new Cliente(emailClienteTest, "Cliente Test Biglietti", false);
+        clienteTest = new Cliente(emailClienteTest, "federicchio","Cliente Test Biglietti", false);
 
         // Viaggio di test
         Treno trenoTest = trenoDirector.costruisciTrenoStandard("BIGTEST001");
