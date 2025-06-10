@@ -16,14 +16,7 @@ public class Tratta {
         this.stazionePartenza = stazionePartenza;
         this.stazioneArrivo = stazioneArrivo;
         // Calcolo della distanza in base alla differenza dei valori delle stazioni
-        this.distanzaKm = calcolaDistanza();
-    }
-
-    private int calcolaDistanza() {
-        int differenzaValori = Math.abs(stazionePartenza.getValore() - stazioneArrivo.getValore());
-        int baseKmPerUnita = 100;
-        int variazione = (int) (Math.random() * 40) - 20; // ±20 km
-        return Math.max(50, (differenzaValori * baseKmPerUnita) + variazione);
+        this.distanzaKm = (int) (stazionePartenza.calcolaDistanzaVerso(stazioneArrivo));
     }
 
     public Stazione getStazionePartenza() {return stazionePartenza;}

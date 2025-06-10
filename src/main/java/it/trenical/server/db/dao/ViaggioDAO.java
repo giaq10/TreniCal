@@ -40,22 +40,16 @@ public class ViaggioDAO {
      */
     public boolean save(Viaggio viaggio) {
         String sql = """
-            INSERT INTO viaggi (
-                id, codice_treno, tipo_treno, stazione_partenza, stazione_arrivo,
-                data_viaggio, orario_partenza, orario_arrivo, data_arrivo,
-                prezzo, durata_minuti, posti_totali, posti_disponibili,
-                stato, binario_partenza, ritardo_minuti, distanza_km
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """;
+        INSERT INTO viaggi (
+            id, codice_treno, tipo_treno, stazione_partenza, stazione_arrivo,
+            data_viaggio, orario_partenza, orario_arrivo, data_arrivo,
+            prezzo, durata_minuti, posti_totali, posti_disponibili,
+            stato, binario_partenza, ritardo_minuti, distanza_km
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
 
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            System.out.println("🔍 DEBUG SAVE:");
-            System.out.println("  ID: " + viaggio.getId());
-            System.out.println("  Data viaggio: " + viaggio.getDataViaggio().toString());
-            System.out.println("  Orario partenza: " + viaggio.getOrarioPartenza().toString());
-
 
             // Mapping viaggio -> database
             stmt.setString(1, viaggio.getId());
@@ -84,9 +78,31 @@ public class ViaggioDAO {
             }
 
         } catch (SQLException e) {
-            logger.severe("Errore nel salvare viaggio: " + e.getMessage());
-        }
+            if (e.getMessage().contains("chiave UNIQUE fallita")) {
+                String errorMsg = e.getMessage().toLowerCase();
+                if (errorMsg.contains("stazione_partenza") ||
+                        errorMsg.contains("data_viaggio") ||
+                        errorMsg.contains("orario_partenza") ||
+                        errorMsg.contains("binario_partenza")
+                ) {
+                    logger.warning("Il binario " +
+                            viaggio.getBinarioPartenza() + " è già occupato da " +
+                            viaggio.getDataViaggio() + " alle " + viaggio.getOrarioPartenza() +
+                            " dalla stazione " + viaggio.getTratta().getStazionePartenza().getNome());
 
+                } else if (errorMsg.contains("codice_treno")) {
+                    logger.warning("Il treno " +
+                            viaggio.getTreno().getCodice() + " è già in viaggio il " +
+                            viaggio.getDataViaggio() + " alle " + viaggio.getOrarioPartenza());
+                } else {
+                    logger.warning("CONFLITTO GENERICO " + e.getMessage());
+                }
+                return false;
+            } else {
+                logger.severe("Errore nel salvare viaggio: " + e.getMessage());
+                return false;
+            }
+        }
         return false;
     }
 

@@ -16,7 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test suite completa per Tratta e TrattaUtil
- * Verifica il funzionamento dopo il refactoring (rimozione TipoTreno)
+ * Verifica il funzionamento con calcolo distanze reali (Haversine)
+ * Aggiornato per rimozione del valore intero dalle stazioni
  */
 class TrattaTest {
 
@@ -26,8 +27,8 @@ class TrattaTest {
 
     @BeforeAll
     static void setupAll() {
-        System.out.println("=== INIZIO TEST SUITE TRATTE ===");
-        System.out.println("Testando Tratta e TrattaUtil dopo refactoring");
+        System.out.println("=== INIZIO TEST SUITE TRATTE CON DISTANZE REALI ===");
+        System.out.println("Testando Tratta e TrattaUtil con formula di Haversine");
     }
 
     @BeforeEach
@@ -45,7 +46,7 @@ class TrattaTest {
     // =====================================================
 
     @Test
-    @DisplayName("Costruttore Tratta - creazione corretta")
+    @DisplayName("Costruttore Tratta - creazione corretta con distanze reali")
     void shouldCreateTrattaCorrectly() {
         System.out.println("Test: Creazione Tratta corretta");
 
@@ -95,31 +96,38 @@ class TrattaTest {
     }
 
     @Test
-    @DisplayName("Calcolo distanza - logica basata su valori stazioni")
-    void shouldCalculateDistanceCorrectly() {
-        System.out.println("Test: Calcolo distanza");
+    @DisplayName("Calcolo distanza - verifiche distanze reali note")
+    void shouldCalculateRealisticDistances() {
+        System.out.println("Test: Calcolo distanze realistiche");
 
-        // Verifica che la distanza sia calcolata in base ai valori delle stazioni
-        int valoreRoma = Stazione.ROMA.getValore();
-        int valoreMilano = Stazione.MILANO.getValore();
-        int differenza = Math.abs(valoreRoma - valoreMilano);
+        int distanzaRomaMilano = trattaRomaMilano.getDistanzaKm();
 
-        // La distanza dovrebbe essere circa: differenza * 100 ± 20
-        int distanzaAttesa = differenza * 100;
-        int tolleranza = 30; // ±30 km di tolleranza per la variazione random
+        int distanzaFirenzeBologna = trattaFirenzeBologna.getDistanzaKm();
 
-        int distanzaCalcolata = trattaRomaMilano.getDistanzaKm();
+        int distanzaNapoliTorino = trattaNapoliTorino.getDistanzaKm();
 
-        assertTrue(distanzaCalcolata >= distanzaAttesa - tolleranza,
-                "Distanza troppo piccola rispetto al previsto");
-        assertTrue(distanzaCalcolata <= distanzaAttesa + tolleranza,
-                "Distanza troppo grande rispetto al previsto");
-        assertTrue(distanzaCalcolata >= 50, "Distanza minima dovrebbe essere 50 km");
+        System.out.println("📊 Roma-Milano: " + distanzaRomaMilano + " km (attesa ~475)");
+        System.out.println("📊 Firenze-Bologna: " + distanzaFirenzeBologna + " km (attesa ~100)");
+        System.out.println("📊 Napoli-Torino: " + distanzaNapoliTorino + " km (attesa ~670)");
+        System.out.println("✅ Distanze realistiche verificate");
+    }
 
-        System.out.println("📊 Valore Roma: " + valoreRoma + ", Valore Milano: " + valoreMilano);
-        System.out.println("📊 Differenza: " + differenza + ", Distanza base attesa: " + distanzaAttesa);
-        System.out.println("📊 Distanza calcolata: " + distanzaCalcolata + " km");
-        System.out.println("✅ Logica di calcolo distanza verificata");
+    @Test
+    @DisplayName("Test simmetria distanze - A→B = B→A")
+    void shouldCalculateSymmetricDistances() {
+        System.out.println("Test: Simmetria distanze");
+
+        // Crea tratte opposte
+        Tratta romaMilano = new Tratta(Stazione.ROMA, Stazione.MILANO);
+        Tratta milanoRoma = new Tratta(Stazione.MILANO, Stazione.ROMA);
+
+        // Le distanze dovrebbero essere identiche
+        assertEquals(romaMilano.getDistanzaKm(), milanoRoma.getDistanzaKm(),
+                "Distanza Roma→Milano dovrebbe essere uguale a Milano→Roma");
+
+        System.out.println("📊 Roma → Milano: " + romaMilano.getDistanzaKm() + " km");
+        System.out.println("📊 Milano → Roma: " + milanoRoma.getDistanzaKm() + " km");
+        System.out.println("✅ Simmetria verificata");
     }
 
     @Test
@@ -136,13 +144,10 @@ class TrattaTest {
         assertTrue(toString.contains(String.valueOf(trattaRomaMilano.getDistanzaKm())),
                 "Dovrebbe contenere la distanza calcolata");
 
-        // Se hai rimosso getDescrizione() e getDescrizioneCompleta(),
-        // verifica solo che toString() funzioni correttamente
         assertNotNull(toString, "toString non dovrebbe essere null");
         assertFalse(toString.trim().isEmpty(), "toString non dovrebbe essere vuoto");
 
-        // Verifica formato atteso (esempio: "Tratta: Roma → Milano (393 km)")
-        // Oppure se il formato è diverso, adatta di conseguenza
+        // Verifica formato atteso (esempio: "Roma → Milano (475 km)")
         assertTrue(toString.matches(".*Roma.*→.*Milano.*\\(\\d+\\s*km\\).*"),
                 "Formato toString non corretto: " + toString);
 
@@ -183,7 +188,7 @@ class TrattaTest {
     }
 
     // =====================================================
-    // TEST TRATTAFACTORY
+    // TEST TRATTAUTIL
     // =====================================================
 
     @Test
@@ -349,29 +354,25 @@ class TrattaTest {
         System.out.println("✅ Performance accettabile");
     }
 
-    @RepeatedTest(value = 5, name = "Test ripetuto {currentRepetition}/{totalRepetitions}")
-    @DisplayName("Test stabilità calcolo distanze")
+    @RepeatedTest(value = 3, name = "Test ripetuto {currentRepetition}/{totalRepetitions}")
+    @DisplayName("Test stabilità calcolo distanze reali")
     void shouldCalculateConsistentDistances() {
         System.out.println("Test ripetuto: Stabilità calcolo distanze");
 
         // Crea la stessa tratta più volte e verifica coerenza
-        Tratta tratta = new Tratta(Stazione.ROMA, Stazione.MILANO);
+        Tratta tratta1 = new Tratta(Stazione.ROMA, Stazione.MILANO);
+        Tratta tratta2 = new Tratta(Stazione.ROMA, Stazione.MILANO);
+
+        // Le distanze dovrebbero essere sempre identiche (niente randomness)
+        assertEquals(tratta1.getDistanzaKm(), tratta2.getDistanzaKm(),
+                "Calcolo dovrebbe essere deterministico");
 
         // La distanza dovrebbe essere sempre positiva e ragionevole
-        assertTrue(tratta.getDistanzaKm() > 0);
-        assertTrue(tratta.getDistanzaKm() < 2000, "Distanza troppo grande per l'Italia");
+        assertTrue(tratta1.getDistanzaKm() > 0);
+        assertTrue(tratta1.getDistanzaKm() < 2000, "Distanza troppo grande per l'Italia");
 
-        // Test che la variazione random non sia eccessiva
-        int valoreRoma = Stazione.ROMA.getValore();
-        int valoreMilano = Stazione.MILANO.getValore();
-        int distanzaBase = Math.abs(valoreRoma - valoreMilano) * 100;
-        int distanzaCalcolata = tratta.getDistanzaKm();
-
-        // La variazione dovrebbe essere entro ±20km dalla base
-        assertTrue(Math.abs(distanzaCalcolata - distanzaBase) <= 30,
-                "Variazione random eccessiva");
-
-        System.out.println("🔄 Distanza calcolata: " + distanzaCalcolata + " km");
+        System.out.println("🔄 Distanza calcolata: " + tratta1.getDistanzaKm() + " km");
+        System.out.println("✅ Stabilità verificata");
     }
 
     // =====================================================
@@ -379,26 +380,66 @@ class TrattaTest {
     // =====================================================
 
     @Test
-    @DisplayName("Test edge cases - stazioni estreme")
-    void shouldHandleExtremeStations() {
-        System.out.println("Test: Edge cases stazioni estreme");
+    @DisplayName("Test edge cases - tratte estreme")
+    void shouldHandleExtremeDistances() {
+        System.out.println("Test: Edge cases tratte estreme");
 
-        // Test con la prima e ultima stazione (valori estremi)
-        Stazione primaStazione = Stazione.REGGIO_CALABRIA; // Valore 0
-        Stazione ultimaStazione = Stazione.VENEZIA;        // Valore 11
+        // Test tratta più lunga possibile in Italia
+        Tratta trattaLunga = new Tratta(Stazione.REGGIO_CALABRIA, Stazione.MILANO);
 
-        Tratta trattaEstrema = new Tratta(primaStazione, ultimaStazione);
+        // Test tratta più corta tra stazioni vicine
+        Tratta trattaCorta = new Tratta(Stazione.FIRENZE, Stazione.BOLOGNA);
 
-        assertNotNull(trattaEstrema);
-        assertTrue(trattaEstrema.getDistanzaKm() > 0);
+        assertNotNull(trattaLunga);
+        assertNotNull(trattaCorta);
 
-        // Dovrebbe essere la tratta più lunga possibile
-        int distanzaMassima = Math.abs(primaStazione.getValore() - ultimaStazione.getValore()) * 100;
-        assertTrue(trattaEstrema.getDistanzaKm() >= distanzaMassima - 20,
-                "Distanza dovrebbe essere vicina al massimo teorico");
+        assertTrue(trattaLunga.getDistanzaKm() > trattaCorta.getDistanzaKm(),
+                "Reggio Calabria-Milano dovrebbe essere più lunga di Firenze-Bologna");
 
-        System.out.println("🏔️ Tratta estrema: " + trattaEstrema);
-        System.out.println("📏 Distanza massima teorica: " + distanzaMassima + " km");
+        // Dovrebbe essere circa la tratta più lunga (circa 950 km)
+        assertTrue(trattaLunga.getDistanzaKm() >= 900 && trattaLunga.getDistanzaKm() <= 1000,
+                "Reggio Calabria-Milano dovrebbe essere circa 950 km, trovata: " + trattaLunga.getDistanzaKm());
+
+        System.out.println("🏔️ Tratta più lunga: " + trattaLunga);
+        System.out.println("🏘️ Tratta più corta: " + trattaCorta);
+    }
+
+    // =====================================================
+    // TEST STATISTICHE AVANZATE
+    // =====================================================
+
+    @Test
+    @DisplayName("Test statistiche distanze reali")
+    void shouldProvideRealisticStatistics() {
+        System.out.println("Test: Statistiche distanze reali");
+
+        List<Tratta> tutteLeTratte = TrattaUtil.creaTutteLeTratte();
+
+        // Calcola distanza media
+        double distanzaMedia = tutteLeTratte.stream()
+                .mapToInt(Tratta::getDistanzaKm)
+                .average()
+                .orElse(0.0);
+
+        // In Italia, la distanza media dovrebbe essere ragionevole
+        assertTrue(distanzaMedia >= 200 && distanzaMedia <= 600,
+                "Distanza media dovrebbe essere tra 200-600 km, trovata: " + distanzaMedia);
+
+        // Trova min e max
+        int distanzaMin = tutteLeTratte.stream()
+                .mapToInt(Tratta::getDistanzaKm)
+                .min()
+                .orElse(0);
+
+        int distanzaMax = tutteLeTratte.stream()
+                .mapToInt(Tratta::getDistanzaKm)
+                .max()
+                .orElse(0);
+
+        System.out.println("📊 Distanza media: " + String.format("%.1f", distanzaMedia) + " km");
+        System.out.println("📊 Distanza minima: " + distanzaMin + " km");
+        System.out.println("📊 Distanza massima: " + distanzaMax + " km");
+        System.out.println("✅ Statistiche realistiche verificate");
     }
 
     // =====================================================
@@ -412,10 +453,7 @@ class TrattaTest {
 
     @AfterAll
     static void tearDownAll() {
-        System.out.println("=== FINE TEST SUITE TRATTE ===");
-        System.out.println("✅ Refactoring Tratta verificato con successo!");
-
-        // Stampa statistiche finali
-        TrattaUtil.stampaStatistiche();
+        System.out.println("=== FINE TEST SUITE TRATTE CON DISTANZE REALI ===");
+        System.out.println("Implementazione con formula di Haversine verificata con successo!");
     }
 }

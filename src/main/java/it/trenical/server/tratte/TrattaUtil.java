@@ -44,16 +44,4 @@ public class TrattaUtil {
                 .orElse(null);
     }
 
-    public static void stampaStatistiche() {
-        System.out.println("=== STATISTICHE TRATTE ===");
-        System.out.println("Numero stazioni totali: " + Stazione.values().length);
-        System.out.println("Numero tratte possibili: " + (Stazione.values().length * (Stazione.values().length - 1)));
-        System.out.println("Esempio tratte:");
-
-        List<Tratta> tutteLeTratte = creaTutteLeTratte();
-        for (int i = 0; i < Math.min(5, tutteLeTratte.size()); i++) {
-            System.out.println("  " + tutteLeTratte.get(i));
-        }
-        System.out.println("  ... e altre " + (tutteLeTratte.size() - 5) + " tratte");
-    }
 }

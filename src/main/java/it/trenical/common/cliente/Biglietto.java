@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 public class Biglietto implements Cloneable {
 
@@ -47,6 +48,11 @@ public class Biglietto implements Cloneable {
     private String generaIdBiglietto() {
         if (nominativo == null) {
             return null; // Non genera ID se non c'è nominativo
+        }
+        try {
+            TimeUnit.MILLISECONDS.sleep(50);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
         String input = String.format("%s_%s_%d",
                 nominativo.replaceAll("\\s+", ""),
