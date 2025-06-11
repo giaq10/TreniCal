@@ -54,6 +54,8 @@ public class Viaggio {
         if (treno == null) throw new IllegalArgumentException("Treno obbligatorio");
         if (tratta == null) throw new IllegalArgumentException("Tratta obbligatoria");
         if (dataViaggio == null) throw new IllegalArgumentException("Data viaggio obbligatoria");
+        if(dataViaggio.isBefore(LocalDate.now()))
+            throw new IllegalArgumentException("Data viaggio non può essere precedente a quella attuale");
 
         this.treno = treno;
         this.tratta = tratta;
