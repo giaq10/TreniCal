@@ -15,7 +15,7 @@ src/
 │   │           └── server/
 │   │               ├── db/
 │   │               ├── controller/
-│   │               ├── notification/
+│   │               ├── notifica/
 │   │               └── network/     
 │   ├── resources/
 │   └── proto/

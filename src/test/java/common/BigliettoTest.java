@@ -294,31 +294,6 @@ public class BigliettoTest {
         System.out.println();
     }
 
-    @Test
-    @DisplayName("Test riepilogo biglietto")
-    void testRiepilogoBiglietto() {
-        System.out.println("=== Test Riepilogo Biglietto ===");
-
-        // Test riepilogo biglietto incompleto
-        System.out.println("Riepilogo biglietto INCOMPLETO:");
-        System.out.println(biglietto.getRiepilogoBiglietto());
-
-        // Completa il biglietto
-        biglietto.setNominativo("Mario Rossi");
-
-        System.out.println("Riepilogo biglietto COMPLETO:");
-        System.out.println(biglietto.getRiepilogoBiglietto());
-
-        // Verifica che il riepilogo contenga le informazioni principali
-        String riepilogo = biglietto.getRiepilogoBiglietto();
-        assertTrue(riepilogo.contains("BIGLIETTO TRENO"));
-        assertTrue(riepilogo.contains("Mario Rossi"));
-        assertTrue(riepilogo.contains(biglietto.getId()));
-        assertTrue(riepilogo.contains("€"));
-
-        System.out.println("✅ Riepilogo biglietto funziona correttamente");
-        System.out.println();
-    }
 
     @Test
     @DisplayName("Test equals e hashCode")

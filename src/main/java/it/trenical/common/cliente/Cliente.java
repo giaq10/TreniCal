@@ -1,23 +1,21 @@
 package it.trenical.common.cliente;
 
+import it.trenical.common.observer.Notifica;
+import it.trenical.common.observer.Observer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class Cliente {
+public class Cliente implements Observer {
     private final String email;
     private String password;
     private String nome;
     private boolean abbonamentoFedelta;
     private final List<Biglietto> bigliettiAcquistati;
 
-    /**
-     * Costruttore per creare un nuovo cliente
-     * @param email Email del cliente (identificativo unico)
-     * @param nome Nome del cliente
-     * @param abbonamentoFedelta Se il cliente ha l'abbonamento fedeltà
-     */
+    private final List<Notifica> notificheRicevute;
+
     public Cliente(String email, String password ,String nome, boolean abbonamentoFedelta) {
         if (!isEmailValida(email))
             throw new IllegalArgumentException("Email non valida");
@@ -30,14 +28,23 @@ public class Cliente {
         this.nome = nome.trim();
         this.abbonamentoFedelta = abbonamentoFedelta;
         this.bigliettiAcquistati = new ArrayList<>();
+
+        this.notificheRicevute = new ArrayList<>();
     }
-    /**
-     * Costruttore semplificato senza abbonamento fedeltà (default false)
-     * @param email Email del cliente
-     * @param nome Nome del cliente
-     */
+
     public Cliente(String email,String password, String nome) {
         this(email, password, nome, false);
+    }
+
+    @Override
+    public void update(Notifica notifica) {
+        notificheRicevute.add(notifica);
+
+    }
+
+    @Override
+    public String getObserverId() {
+        return email;
     }
 
     private boolean isEmailValida(String email) {

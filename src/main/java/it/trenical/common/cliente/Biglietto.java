@@ -18,10 +18,6 @@ public class Biglietto implements Cloneable {
     private String nominativo;
     private final LocalDateTime dataAcquisto;
 
-    /**
-     * Costruttore principale per creare un biglietto
-     * @param viaggio Viaggio per cui è acquistato il biglietto
-     */
     public Biglietto(Viaggio viaggio) {
         if (viaggio == null)
             throw new IllegalArgumentException("Viaggio obbligatorio");
@@ -34,11 +30,6 @@ public class Biglietto implements Cloneable {
         this.id = generaIdBiglietto();
     }
 
-    /**
-     * Costruttore privato per la clonazione
-     * @param viaggio Viaggio originale
-     * @param dataAcquistoOriginale Data acquisto del biglietto originale
-     */
     private Biglietto(Viaggio viaggio, LocalDateTime dataAcquistoOriginale) {
         this.viaggio = viaggio;
         this.dataAcquisto = dataAcquistoOriginale; // Mantiene la data originale
@@ -139,35 +130,6 @@ public class Biglietto implements Cloneable {
                 dataAcquisto.getYear(),
                 dataAcquisto.getHour(),
                 dataAcquisto.getMinute());
-    }
-
-    public String getRiepilogoBiglietto() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== BIGLIETTO TRENO ===\n");
-        sb.append("ID: ").append(id).append("\n");
-        sb.append("Nominativo: ").append(getNominativo()).append("\n");
-
-        if (!isCompleto()) {
-            sb.append("⚠️ ATTENZIONE: Inserire nominativo per completare il biglietto\n");
-        }
-
-        sb.append("Treno: ").append(getCodiceTreno()).append(" (").append(getTipoTreno()).append(")\n");
-        sb.append("Tratta: ").append(getInfoTratta()).append("\n");
-        sb.append("Data viaggio: ").append(getDataOraPartenzaFormattata()).append("\n");
-        sb.append("Arrivo: ").append(getDataOraArrivoFormattata()).append("\n");
-        sb.append("Binario: ").append(getBinarioPartenza().getDescrizione()).append("\n");
-        sb.append("Durata: ").append(getDurataFormattata()).append("\n");
-        sb.append("Prezzo: €").append(String.format("%.2f", getPrezzo())).append("\n");
-        sb.append("Acquistato: ").append(getDataAcquistoFormattata()).append("\n");
-
-        if (haRitardo()) {
-            sb.append("⚠️ RITARDO: ").append(getRitardoMinuti()).append(" minuti\n");
-        }
-        if (isCancellato()) {
-            sb.append("❌ VIAGGIO CANCELLATO\n");
-        }
-
-        return sb.toString();
     }
 
     @Override

@@ -1,6 +1,10 @@
 package it.trenical.common.viaggi;
 
+import it.trenical.common.observer.Notifica;
+import it.trenical.common.observer.Observer;
+import it.trenical.common.observer.TipoNotifica;
 import it.trenical.common.promozioni.Promozione;
+import it.trenical.common.observer.Subject;
 import it.trenical.server.tratte.Tratta;
 import it.trenical.server.treni.Treno;
 import it.trenical.common.stazioni.Binario;
@@ -10,11 +14,12 @@ import it.trenical.common.viaggi.strategy.StrategyFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class Viaggio {
+public class Viaggio implements Subject {
     private static final List<LocalTime> ORARI_PARTENZA_DISPONIBILI = Arrays.asList(
             LocalTime.of(4, 0),   // 04:00
             LocalTime.of(6, 0),   // 06:00
@@ -37,7 +42,7 @@ public class Viaggio {
     private final LocalTime orarioPartenzaProgrammato;
     private final LocalTime orarioArrivoProgrammato;
     private final LocalDate dataArrivoProgrammata;
-    private final Binario binarioPartenza;
+    private Binario binarioPartenza;
 
     private double prezzo;
     private final int durataMinuti;
@@ -49,6 +54,8 @@ public class Viaggio {
     private StatoViaggio stato;
     private int ritardoMinuti;
     private String motivoCancellazione;
+
+    private final List<Observer> observers;
 
     public Viaggio(Treno treno, Tratta tratta, LocalDate dataViaggio) {
         if (treno == null) throw new IllegalArgumentException("Treno obbligatorio");
@@ -80,6 +87,8 @@ public class Viaggio {
         this.postiDisponibili = treno.getPostiTotali();
         this.stato = StatoViaggio.PROGRAMMATO;
         this.ritardoMinuti = 0;
+
+        this.observers = new ArrayList<>();
     }
 
     private LocalDateTime calcolaDataOraArrivo(LocalDate dataPartenza, LocalTime orarioPartenza, int durataMinuti) {
@@ -143,6 +152,21 @@ public class Viaggio {
         LocalDateTime nuovaDataOraArrivo = calcolaDataOraArrivo(dataViaggio, nuovoOrario, durataMinuti);
         this.orarioArrivoEffettivo = nuovaDataOraArrivo.toLocalTime();
         this.dataArrivoEffettiva = nuovaDataOraArrivo.toLocalDate();
+
+        notifyObservers(new Notifica(
+                TipoNotifica.CAMBIO_ORARIO_PARTENZA,
+                "Il tuo treno ha un nuovo orario di partenza: " + nuovoOrario
+        ));
+    }
+
+    public void cambioBinario(int nuovoBinario) {
+        Binario[] binari = Binario.values();
+        this.binarioPartenza = binari[nuovoBinario];
+
+        notifyObservers(new Notifica(
+                TipoNotifica.CAMBIO_BINARIO,
+                "Il tuo treno cambierà binario: " + binarioPartenza.getDescrizione()
+        ));
     }
 
     public void impostaRitardo(int minuti) {
@@ -152,6 +176,12 @@ public class Viaggio {
             LocalDateTime dataOraArrivoConRitardo = LocalDateTime.of(dataArrivoProgrammata, orarioArrivoProgrammato).plusMinutes(minuti);
             this.orarioArrivoEffettivo = dataOraArrivoConRitardo.toLocalTime();
             this.dataArrivoEffettiva = dataOraArrivoConRitardo.toLocalDate();
+
+            notifyObservers(new Notifica(
+                    TipoNotifica.RITARDO_TRENO,
+                    "Il tuo treno ha accumulato un ritardo di " + minuti + " minuti"
+            ));
+
         } else {
             this.orarioArrivoEffettivo = orarioArrivoProgrammato;
             this.dataArrivoEffettiva = dataArrivoProgrammata;
@@ -161,6 +191,11 @@ public class Viaggio {
     public void cancellaViaggio(String motivo) {
         this.stato = StatoViaggio.CANCELLATO;
         this.motivoCancellazione = motivo;
+
+        notifyObservers(new Notifica(
+                TipoNotifica.CANCELLAZIONE_VIAGGIO,
+                "Il tuo viaggio è stato cancellato. Motivo: " + motivo
+        ));
     }
 
     public void applicaPromozione(Promozione promozione) {
@@ -280,5 +315,42 @@ public class Viaggio {
                 stato));
 
         return sb.toString();
+    }
+
+    @Override
+    public void attach(Observer observer) {
+        if (observer != null && !observers.contains(observer)) {
+            observers.add(observer);
+            System.out.println("Observer " + observer.getObserverId() +
+                    " registrato per viaggio " + getId());
+        }
+    }
+
+    @Override
+    public void detach(Observer observer) {
+        if (observers.remove(observer)) {
+            System.out.println("Observer " + observer.getObserverId() +
+                    " rimosso da viaggio " + getId());
+        }
+    }
+
+    @Override
+    public void notifyObservers(Notifica notifica) {
+        System.out.println("Viaggio " + getId() + " notifica " +
+                observers.size() + " observers: " + notifica.getTipo());
+
+        for (Observer observer : observers) {
+            observer.update(notifica);
+        }
+    }
+
+    @Override
+    public int getObserverCount() {
+        return observers.size();
+    }
+
+    @Override
+    public String getSubjectId() {
+        return getId();
     }
 }
