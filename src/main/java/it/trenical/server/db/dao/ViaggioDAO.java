@@ -256,6 +256,53 @@ public class ViaggioDAO {
         return false;
     }
 
+    public boolean updateViaggioCompleto(Viaggio viaggio) {
+        String sql = """
+                    UPDATE viaggi SET 
+                        prezzo = ?,
+                        posti_disponibili = ?,
+                        stato = ?,
+                        ritardo_minuti = ?,
+                        motivo_cancellazione = ?,
+                        binario_partenza = ?,
+                        orario_partenza = ?,
+                        orario_arrivo = ?,
+                        data_arrivo = ?
+                    WHERE id = ?
+                    """;
+
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setDouble(1, viaggio.getPrezzo());
+            stmt.setInt(2, viaggio.getPostiDisponibili());
+            stmt.setString(3, viaggio.getStato().name());
+            stmt.setInt(4, viaggio.getRitardoMinuti());
+            stmt.setString(5, viaggio.getMotivoCancellazione());
+            stmt.setString(6, "Binario " + viaggio.getBinarioPartenza().getNumero());
+            stmt.setString(7, viaggio.getOrarioPartenzaEffettivo().toString());
+            stmt.setString(8, viaggio.getOrarioArrivoEffettivo().toString());
+            stmt.setString(9, viaggio.getDataArrivoEffettiva().toString());
+            stmt.setString(10, viaggio.getId());
+
+            int rowsAffected = stmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                logger.info("Viaggio aggiornato completamente: " + viaggio.getId() +
+                        " (Ritardo: " + viaggio.getRitardoMinuti() + " min, " +
+                        "Partenza: " + viaggio.getOrarioPartenzaEffettivo() + ", " +
+                        "Arrivo: " + viaggio.getOrarioArrivoEffettivo() + ")");
+                return true;
+            }
+
+        } catch (SQLException e) {
+            logger.severe("Errore nell'aggiornamento completo viaggio: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
     /**
      * Trova tutti i viaggi disponibili (con posti e non cancellati)
      * @return Lista viaggi disponibili
@@ -265,7 +312,6 @@ public class ViaggioDAO {
         String sql = """
             SELECT * FROM viaggi 
             WHERE posti_disponibili > 0 AND stato != 'CANCELLATO'
-            ORDER BY data_viaggio, orario_partenza
             """;
 
         try (Connection conn = dbManager.getConnection();
@@ -333,52 +379,42 @@ public class ViaggioDAO {
         return 0;
     }
 
-    /**
-     * Mappa un ResultSet a un oggetto Viaggio
-     * NOTA: Questa è una versione semplificata che crea un viaggio basic
-     * In un'implementazione completa, dovremmo ricostruire completamente il viaggio
-     */
     private Viaggio mapResultSetToViaggio(ResultSet rs) throws SQLException {
         try {
-            // Estrazione dati dal database
             String idDatabase = rs.getString("id");
             String codiceTreno = rs.getString("codice_treno");
             TipoTreno tipoTreno = TipoTreno.valueOf(rs.getString("tipo_treno"));
             String nomePartenza = rs.getString("stazione_partenza");
             String nomeArrivo = rs.getString("stazione_arrivo");
             LocalDate dataViaggio = LocalDate.parse(rs.getString("data_viaggio"));
+            LocalTime orarioPartenza = LocalTime.parse(rs.getString("orario_partenza"));
+            LocalTime orarioArrivo = LocalTime.parse(rs.getString("orario_arrivo"));
+            LocalDate dataArrivo = LocalDate.parse(rs.getString("data_arrivo"));
             double prezzo = rs.getDouble("prezzo");
+            int durataMinuti = rs.getInt("durata_minuti");
+            int postiTotali = rs.getInt("posti_totali");
             int postiDisponibili = rs.getInt("posti_disponibili");
             StatoViaggio stato = StatoViaggio.valueOf(rs.getString("stato"));
+            String binarioStr = rs.getString("binario_partenza"); // "Binario 1", "Binario 2", etc.
             int ritardoMinuti = rs.getInt("ritardo_minuti");
+            String motivoCancellazione = rs.getString("motivo_cancellazione");
 
-            // Ricostruzione oggetti
             Stazione stazionePartenza = Stazione.fromNome(nomePartenza);
             Stazione stazioneArrivo = Stazione.fromNome(nomeArrivo);
             Tratta tratta = new Tratta(stazionePartenza, stazioneArrivo);
             Treno treno = trenoDirector.costruisciTrenoPerTipo(tipoTreno, codiceTreno);
 
-            // Creazione viaggio temporaneo
-            Viaggio viaggioTemp = new Viaggio(treno, tratta, dataViaggio);
+            int numeroBinario = Integer.parseInt(binarioStr.replace("Binario ", ""));
+            Binario binario = Binario.values()[numeroBinario - 1]; // Binario 1 = index 0
 
-            // HACK: Usa reflection per impostare l'ID corretto dal database
-            java.lang.reflect.Field idField = Viaggio.class.getDeclaredField("id");
-            idField.setAccessible(true);
-            idField.set(viaggioTemp, idDatabase);
+            Viaggio viaggio = new Viaggio(
+                    idDatabase, treno, tratta, dataViaggio,
+                    orarioPartenza, orarioArrivo, dataArrivo,
+                    prezzo, durataMinuti, postiDisponibili,
+                    stato, binario, motivoCancellazione
+            );
 
-            // Aggiornamento stato dal database
-            viaggioTemp.aggiornaStato(stato);
-            if (ritardoMinuti > 0) {
-                viaggioTemp.impostaRitardo(ritardoMinuti);
-            }
-
-            // Aggiustamento posti (simulazione prenotazioni)
-            int postiOccupati = treno.getPostiTotali() - postiDisponibili;
-            for (int i = 0; i < postiOccupati; i++) {
-                viaggioTemp.prenotaPosto();
-            }
-
-            return viaggioTemp;
+            return viaggio;
 
         } catch (Exception e) {
             logger.severe("Errore nel mapping viaggio: " + e.getMessage());

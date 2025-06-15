@@ -52,7 +52,6 @@ public class Viaggio implements Subject {
     private LocalDate dataArrivoEffettiva;
     private int postiDisponibili;
     private StatoViaggio stato;
-    private int ritardoMinuti;
     private String motivoCancellazione;
 
     private final List<Observer> observers;
@@ -86,7 +85,37 @@ public class Viaggio implements Subject {
         this.dataArrivoEffettiva = dataArrivoProgrammata;
         this.postiDisponibili = treno.getPostiTotali();
         this.stato = StatoViaggio.PROGRAMMATO;
-        this.ritardoMinuti = 0;
+
+        this.observers = new ArrayList<>();
+    }
+
+    public Viaggio(String id, Treno treno, Tratta tratta, LocalDate dataViaggio,
+                   LocalTime orarioPartenza, LocalTime orarioArrivo, LocalDate dataArrivo,
+                   double prezzo, int durataMinuti, int postiDisponibili,
+                   StatoViaggio stato, Binario binarioPartenza,
+                    String motivoCancellazione) {
+
+        if (treno == null) throw new IllegalArgumentException("Treno obbligatorio");
+        if (tratta == null) throw new IllegalArgumentException("Tratta obbligatoria");
+        if (dataViaggio == null) throw new IllegalArgumentException("Data viaggio obbligatoria");
+
+        this.id = id;
+        this.treno = treno;
+        this.tratta = tratta;
+        this.dataViaggio = dataViaggio;
+        this.orarioPartenzaProgrammato = orarioPartenza;
+        this.orarioArrivoProgrammato = orarioArrivo;
+        this.dataArrivoProgrammata = dataArrivo;
+        this.binarioPartenza = binarioPartenza;
+        this.prezzo = prezzo;
+        this.durataMinuti = durataMinuti;
+        this.postiDisponibili = postiDisponibili;
+        this.stato = stato;
+        this.motivoCancellazione = motivoCancellazione;
+
+        this.orarioPartenzaEffettivo = orarioPartenzaEffettivo != null ? orarioPartenzaEffettivo : orarioPartenza;
+        this.orarioArrivoEffettivo = orarioArrivoEffettivo != null ? orarioArrivoEffettivo : orarioArrivo;
+        this.dataArrivoEffettiva = dataArrivoEffettiva != null ? dataArrivoEffettiva : dataArrivo;
 
         this.observers = new ArrayList<>();
     }
@@ -161,21 +190,31 @@ public class Viaggio implements Subject {
 
     public void cambioBinario(int nuovoBinario) {
         Binario[] binari = Binario.values();
-        this.binarioPartenza = binari[nuovoBinario];
+        if (nuovoBinario >= 0 && nuovoBinario < binari.length) {
+            this.binarioPartenza = binari[nuovoBinario];
 
-        notifyObservers(new Notifica(
-                TipoNotifica.CAMBIO_BINARIO,
-                "Il tuo treno cambierà binario: " + binarioPartenza.getDescrizione()
-        ));
+            notifyObservers(new Notifica(
+                    TipoNotifica.CAMBIO_BINARIO,
+                    "Il tuo treno cambierà binario: " + binarioPartenza.getDescrizione()
+            ));
+        }
     }
 
     public void impostaRitardo(int minuti) {
-        this.ritardoMinuti = minuti;
+        if (minuti < 0) {
+            throw new IllegalArgumentException("Il ritardo non può essere negativo");
+        }
+
         if (minuti > 0) {
-            this.stato = StatoViaggio.RITARDO;
+            this.orarioPartenzaEffettivo = orarioPartenzaProgrammato.plusMinutes(minuti);
+
             LocalDateTime dataOraArrivoConRitardo = LocalDateTime.of(dataArrivoProgrammata, orarioArrivoProgrammato).plusMinutes(minuti);
             this.orarioArrivoEffettivo = dataOraArrivoConRitardo.toLocalTime();
             this.dataArrivoEffettiva = dataOraArrivoConRitardo.toLocalDate();
+
+            if (this.stato == StatoViaggio.PROGRAMMATO || this.stato == StatoViaggio.CONFERMATO) {
+                this.stato = StatoViaggio.RITARDO;
+            }
 
             notifyObservers(new Notifica(
                     TipoNotifica.RITARDO_TRENO,
@@ -183,8 +222,13 @@ public class Viaggio implements Subject {
             ));
 
         } else {
+            this.orarioPartenzaEffettivo = orarioPartenzaProgrammato;
             this.orarioArrivoEffettivo = orarioArrivoProgrammato;
             this.dataArrivoEffettiva = dataArrivoProgrammata;
+
+            if (this.stato == StatoViaggio.RITARDO) {
+                this.stato = StatoViaggio.CONFERMATO;
+            }
         }
     }
 
@@ -216,15 +260,25 @@ public class Viaggio implements Subject {
     public LocalTime getOrarioArrivoEffettivo() { return orarioArrivoEffettivo; }
     public LocalDate getDataArrivoEffettiva() { return dataArrivoEffettiva; }
     public Binario getBinarioPartenza() { return binarioPartenza; }
-
     public double getPrezzo() { return prezzo; }
     public int getDurataMinuti() { return durataMinuti; }
-
     public int getPostiDisponibili() { return postiDisponibili; }
     public int getPostiOccupati() { return treno.getPostiTotali() - postiDisponibili; }
     public StatoViaggio getStato() { return stato; }
-    public int getRitardoMinuti() { return ritardoMinuti; }
     public String getMotivoCancellazione() { return motivoCancellazione; }
+
+
+    public int getRitardoMinuti() {
+        if (orarioPartenzaEffettivo.equals(orarioPartenzaProgrammato)) {
+            return 0;
+        }
+
+        LocalDateTime programmato = LocalDateTime.of(dataViaggio, orarioPartenzaProgrammato);
+        LocalDateTime effettivo = LocalDateTime.of(dataViaggio, orarioPartenzaEffettivo);
+
+        long minutiDifferenza = java.time.Duration.between(programmato, effettivo).toMinutes();
+        return (int) Math.max(0, minutiDifferenza);
+    }
 
     public LocalDateTime getDataOraPartenza() {
         return LocalDateTime.of(dataViaggio, orarioPartenzaProgrammato);
@@ -251,7 +305,7 @@ public class Viaggio implements Subject {
     }
 
     public boolean haRitardo() {
-        return ritardoMinuti > 0;
+        return getRitardoMinuti() > 0;
     }
 
     public String getDurataFormattata() {
@@ -304,8 +358,10 @@ public class Viaggio implements Subject {
                 dataViaggio,
                 orarioPartenzaEffettivo));
 
-        if (ritardoMinuti > 0)
-            sb.append(String.format(" (+%d min ritardo)", ritardoMinuti));
+        int ritardo = getRitardoMinuti();
+        if (ritardo > 0) {
+            sb.append(String.format(" (+%d min ritardo)", ritardo));
+        }
 
         sb.append(String.format(" (€%.2f; %s; %d posti disponibili, %s, %s)",
                 prezzo,

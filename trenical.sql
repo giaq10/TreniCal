@@ -1,10 +1,12 @@
+
+PRAGMA foreign_keys = ON;
+
 -- TABELLA CLIENTI
 CREATE TABLE IF NOT EXISTS clienti (
     email VARCHAR(255) PRIMARY KEY,
     password VARCHAR(255) NOT NULL,
     nome VARCHAR(255) NOT NULL,
-    abbonamento_fedelta BOOLEAN DEFAULT 0,
-    data_registrazione DATETIME DEFAULT CURRENT_TIMESTAMP
+    abbonamento_fedelta BOOLEAN DEFAULT 0
 );
 
 -- TABELLA VIAGGI
@@ -35,9 +37,7 @@ CREATE TABLE IF NOT EXISTS promozioni (
     id VARCHAR(255) PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
     tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('Standard', 'Fedelta')),
-    percentuale_sconto DECIMAL(5,2) NOT NULL CHECK (percentuale_sconto > 0 AND percentuale_sconto <= 100),
-    data_creazione DATETIME DEFAULT CURRENT_TIMESTAMP,
-    attiva BOOLEAN DEFAULT 1
+    percentuale_sconto DECIMAL(5,2) NOT NULL CHECK (percentuale_sconto > 0 AND percentuale_sconto <= 100)
 );
 
 -- TABELLA BIGLIETTI

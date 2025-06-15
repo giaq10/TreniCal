@@ -76,14 +76,11 @@ class PromozioneDAOTest {
         System.out.println("Test: Conteggio promozioni esistenti");
 
         int count = promozioneDAO.count();
-        int countAttive = promozioneDAO.countAttive();
 
         assertTrue(count >= 0, "Il conteggio non dovrebbe essere negativo");
-        assertTrue(countAttive >= 0, "Il conteggio attive non dovrebbe essere negativo");
-        assertTrue(countAttive <= count, "Le promozioni attive non possono essere più del totale");
         assertTrue(count >= 3, "Dovrebbero esserci almeno le 3 promozioni di test iniziali");
 
-        System.out.printf("✅ Trovate %d promozioni totali, %d attive%n", count, countAttive);
+        System.out.printf("✅ Trovate %d promozioni totali, %d attive%n", count);
     }
 
     @Test
@@ -199,32 +196,6 @@ class PromozioneDAOTest {
                 promozioniStandard.size(), promozioniFedelta.size());
     }
 
-    @Test
-    @Order(6)
-    @DisplayName("Test ricerca promozioni attive")
-    void testRicercaPromozioniAttive() {
-        System.out.println("Test: Ricerca promozioni attive");
-
-        // Salva promozioni
-        assertTrue(promozioneDAO.save(promozioneTestStandard));
-        assertTrue(promozioneDAO.save(promozioneTestFedelta));
-
-        // Ricerca promozioni attive
-        List<Promozione> promozioniAttive = promozioneDAO.findPromozioniAttive();
-        assertNotNull(promozioniAttive);
-        assertFalse(promozioniAttive.isEmpty());
-
-        // Verifica che le nostre promozioni siano nella lista
-        boolean standardTrovata = promozioniAttive.stream()
-                .anyMatch(p -> p.getId().equals(promoTestStandardId));
-        boolean fedeltaTrovata = promozioniAttive.stream()
-                .anyMatch(p -> p.getId().equals(promoTestFedeltaId));
-
-        assertTrue(standardTrovata, "Promozione Standard dovrebbe essere attiva");
-        assertTrue(fedeltaTrovata, "Promozione Fedeltà dovrebbe essere attiva");
-
-        System.out.printf("✅ Trovate %d promozioni attive%n", promozioniAttive.size());
-    }
 
     @Test
     @Order(7)
@@ -259,44 +230,6 @@ class PromozioneDAOTest {
         assertEquals(40.0, promo.getSconto(), 0.01);
 
         System.out.println("✅ Aggiornamento promozione riuscito");
-    }
-
-    @Test
-    @Order(8)
-    @DisplayName("Test disattivazione e riattivazione promozione")
-    void testDisattivazioneRiattivazione() {
-        System.out.println("Test: Disattivazione e riattivazione promozione");
-
-        // Salva promozione
-        assertTrue(promozioneDAO.save(promozioneTestStandard));
-
-        // Verifica che sia attiva
-        List<Promozione> attivePrima = promozioneDAO.findPromozioniAttive();
-        boolean attivaPrima = attivePrima.stream()
-                .anyMatch(p -> p.getId().equals(promoTestStandardId));
-        assertTrue(attivaPrima, "Promozione dovrebbe essere attiva inizialmente");
-
-        // Disattivazione
-        boolean disattivata = promozioneDAO.disattiva(promoTestStandardId);
-        assertTrue(disattivata, "La disattivazione dovrebbe riuscire");
-
-        // Verifica disattivazione
-        List<Promozione> attiveDopo = promozioneDAO.findPromozioniAttive();
-        boolean attivaDopo = attiveDopo.stream()
-                .anyMatch(p -> p.getId().equals(promoTestStandardId));
-        assertFalse(attivaDopo, "Promozione non dovrebbe essere più attiva");
-
-        // Riattivazione
-        boolean riattivata = promozioneDAO.riattiva(promoTestStandardId);
-        assertTrue(riattivata, "La riattivazione dovrebbe riuscire");
-
-        // Verifica riattivazione
-        List<Promozione> attiveFinale = promozioneDAO.findPromozioniAttive();
-        boolean attivaFinale = attiveFinale.stream()
-                .anyMatch(p -> p.getId().equals(promoTestStandardId));
-        assertTrue(attivaFinale, "Promozione dovrebbe essere di nuovo attiva");
-
-        System.out.println("✅ Disattivazione e riattivazione funzionano correttamente");
     }
 
     @Test
@@ -400,16 +333,6 @@ class PromozioneDAOTest {
         assertTrue(promozioneDAO.save(promoBlackFriday), "Black Friday dovrebbe essere salvata");
         assertTrue(promozioneDAO.save(promoVipNatale), "VIP Natale dovrebbe essere salvata");
 
-        // 3. Verifica che siano attive
-        List<Promozione> attive = promozioneDAO.findPromozioniAttive();
-        boolean blackFridayAttiva = attive.stream()
-                .anyMatch(p -> p.getId().equals(promoBlackFriday.getId()));
-        boolean vipNataleAttiva = attive.stream()
-                .anyMatch(p -> p.getId().equals(promoVipNatale.getId()));
-
-        assertTrue(blackFridayAttiva, "Black Friday dovrebbe essere attiva");
-        assertTrue(vipNataleAttiva, "VIP Natale dovrebbe essere attiva");
-
         // 4. Test applicazione sconti
         double prezzoTest = 100.0;
         double prezzoConBlackFriday = promoBlackFriday.applicaSconto(prezzoTest);
@@ -422,21 +345,7 @@ class PromozioneDAOTest {
         System.out.printf("   - Con Black Friday: €%.2f%n", prezzoConBlackFriday);
         System.out.printf("   - Con VIP Natale: €%.2f%n", prezzoConVipNatale);
 
-        // 5. Disattivazione Black Friday (finita la promozione)
-        assertTrue(promozioneDAO.disattiva(promoBlackFriday.getId()),
-                "Disattivazione Black Friday dovrebbe riuscire");
 
-        // 6. Verifica che solo VIP Natale sia ancora attiva
-        List<Promozione> attiveFinali = promozioneDAO.findPromozioniAttive();
-        boolean blackFridayAttivaFinale = attiveFinali.stream()
-                .anyMatch(p -> p.getId().equals(promoBlackFriday.getId()));
-        boolean vipNataleAttivaFinale = attiveFinali.stream()
-                .anyMatch(p -> p.getId().equals(promoVipNatale.getId()));
-
-        assertFalse(blackFridayAttivaFinale, "Black Friday non dovrebbe più essere attiva");
-        assertTrue(vipNataleAttivaFinale, "VIP Natale dovrebbe essere ancora attiva");
-
-        // 7. Cleanup
         promozioneDAO.delete(promoBlackFriday.getId());
         promozioneDAO.delete(promoVipNatale.getId());
 
@@ -457,10 +366,6 @@ class PromozioneDAOTest {
         Promozione promoInesistente = new PromozioneStandard("Test Inesistente", 10.0);
         boolean aggiornatoInesistente = promozioneDAO.update(promoInesistente);
         assertFalse(aggiornatoInesistente, "Aggiornamento di promozione inesistente dovrebbe fallire");
-
-        // Test disattivazione ID inesistente
-        boolean disattivatoInesistente = promozioneDAO.disattiva("ID_INESISTENTE");
-        assertFalse(disattivatoInesistente, "Disattivazione ID inesistente dovrebbe fallire");
 
         // Test eliminazione ID inesistente
         boolean eliminatoInesistente = promozioneDAO.delete("ID_INESISTENTE");
@@ -483,11 +388,9 @@ class PromozioneDAOTest {
 
         // Test performance conteggi
         int count1 = promozioneDAO.count();
-        int count2 = promozioneDAO.countAttive();
 
         // Test performance ricerche
         List<Promozione> all = promozioneDAO.findAll();
-        List<Promozione> attive = promozioneDAO.findPromozioniAttive();
         List<Promozione> standard = promozioneDAO.findPromozioniStandardAttive();
         List<Promozione> fedelta = promozioneDAO.findPromozioniFedeltaAttive();
 
@@ -499,13 +402,10 @@ class PromozioneDAOTest {
 
         // Verifica coerenza dati
         assertEquals(count1, all.size(), "Count() dovrebbe corrispondere a findAll().size()");
-        assertTrue(attive.size() <= all.size(), "Promozioni attive <= totali");
-        assertTrue(standard.size() + fedelta.size() <= attive.size(),
-                "Standard + Fedeltà <= attive totali");
 
         System.out.printf("✅ Performance test: %dms per %d operazioni%n", duration, 7);
-        System.out.printf("   Totali: %d, Attive: %d, Standard: %d, Fedeltà: %d%n",
-                count1, attive.size(), standard.size(), fedelta.size());
+        System.out.printf("   Totali: %d, Standard: %d, Fedeltà: %d%n",
+                count1, standard.size(), fedelta.size());
     }
 
     @AfterAll

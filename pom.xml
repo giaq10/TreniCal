@@ -9,13 +9,14 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
+        <!-- Java 21 - La tua versione effettiva -->
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <!-- Versioni dipendenze -->
+        <!-- Versioni dipendenze per Java 21 -->
         <junit.version>5.10.1</junit.version>
-        <javafx.version>21.0.1</javafx.version>
+        <javafx.version>21.0.6</javafx.version>
         <grpc.version>1.58.0</grpc.version>
         <protobuf.version>3.24.4</protobuf.version>
         <sqlite.version>3.44.1.0</sqlite.version>
@@ -69,6 +70,13 @@
             <version>${protobuf.version}</version>
         </dependency>
 
+        <!-- AGGIUNTO: Javax annotation per Java 21 -->
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+
         <!-- SQLite per database locale -->
         <dependency>
             <groupId>org.xerial</groupId>
@@ -105,8 +113,13 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
+                    <!-- Java 21 -->
                     <source>21</source>
                     <target>21</target>
+                    <!-- Elimina il warning sui system modules -->
+                    <compilerArgs>
+                        <arg>-Xlint:none</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
 
@@ -132,29 +145,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Plugin per Protobuf -->
-            <plugin>
-                <groupId>org.xolstice.maven.plugins</groupId>
-                <artifactId>protobuf-maven-plugin</artifactId>
-                <version>0.6.1</version>
-                <configuration>
-                    <!--suppress UnresolvedMavenProperty -->
-                    <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
-                    <pluginId>grpc-java</pluginId>
-                    <!--suppress UnresolvedMavenProperty -->
-                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>compile-custom</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Plugin per detection OS (necessario per protobuf) -->
+            <!-- Plugin per detection OS (DEVE essere prima di protobuf) -->
             <plugin>
                 <groupId>kr.motd.maven</groupId>
                 <artifactId>os-maven-plugin</artifactId>
@@ -164,6 +155,28 @@
                         <phase>initialize</phase>
                         <goals>
                             <goal>detect</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Plugin per Protobuf (VERSIONE MANUALE per Windows) -->
+            <plugin>
+                <groupId>org.xolstice.maven.plugins</groupId>
+                <artifactId>protobuf-maven-plugin</artifactId>
+                <version>0.6.1</version>
+                <configuration>
+                    <!-- MANUALE: Specifica per Windows x64 -->
+                    <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:windows-x86_64</protocArtifact>
+                    <pluginId>grpc-java</pluginId>
+                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:windows-x86_64</pluginArtifact>
+                    <protoSourceRoot>${project.basedir}/src/main/proto</protoSourceRoot>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>compile-custom</goal>
                         </goals>
                     </execution>
                 </executions>
