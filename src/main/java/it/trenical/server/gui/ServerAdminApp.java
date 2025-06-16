@@ -8,6 +8,10 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
+
 
 public class ServerAdminApp extends Application {
 
@@ -129,6 +133,9 @@ public class ServerAdminApp extends Application {
         VBox binariBox = creaSezioneBinari();
         grid.add(binariBox, 2, 0);
 
+        VBox creazioneMassivaViaggiBox = creaSezioneCreazioneViaggi();
+        grid.add(creazioneMassivaViaggiBox,3,0);
+
         layout.getChildren().addAll(title, grid);
         return layout;
     }
@@ -180,7 +187,7 @@ public class ServerAdminApp extends Application {
         motivoField.setPromptText("Motivo cancellazione");
 
         Button cancellaBtn = new Button("Cancella Viaggio");
-        cancellaBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
+        cancellaBtn.setStyle("-fx-background-color: darkorange; -fx-text-fill: white;");
         cancellaBtn.setOnAction(e -> {
             String viaggioId = viaggioIdField.getText().trim();
             String motivo = motivoField.getText().trim();
@@ -196,7 +203,26 @@ public class ServerAdminApp extends Application {
             motivoField.clear();
         });
 
-        box.getChildren().addAll(title, viaggioIdField, motivoField, cancellaBtn);
+        Button eliminaPassatiBtn = new Button("Elimina Viaggi Terminati");
+        eliminaPassatiBtn.setStyle("-fx-background-color: green; -fx-text-fill: white;");
+        eliminaPassatiBtn.setOnAction(e -> {
+            adminViaggi.eliminaViaggiTerminati();
+        });
+
+        Button pulisciBtn = new Button("Cancella Tutti i Viaggi Esistenti");
+        pulisciBtn.setStyle("-fx-background-color: darkred; -fx-text-fill: white; -fx-font-weight: bold;");
+        pulisciBtn.setOnAction(e -> {
+            Alert conferma = new Alert(Alert.AlertType.WARNING);
+            conferma.setHeaderText("Eliminare TUTTI i viaggi?");
+            conferma.setContentText("Questa operazione eliminerà definitivamente tutti i viaggi dal database.");
+            Optional<ButtonType> result = conferma.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                adminViaggi.eliminaTuttiIViaggi();
+            }
+        });
+
+        box.getChildren().addAll(title,viaggioIdField,motivoField,cancellaBtn,eliminaPassatiBtn, pulisciBtn);
+
         return box;
     }
 
@@ -232,6 +258,71 @@ public class ServerAdminApp extends Application {
         });
 
         box.getChildren().addAll(title, viaggioIdField, binarioCombo, cambiaBinarioBtn);
+        return box;
+    }
+
+    private VBox creaSezioneCreazioneViaggi() {
+        VBox box = new VBox(10);
+        box.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8;");
+
+        Label title = new Label("Generazione Viaggi");
+        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+
+        // Date picker per range
+        DatePicker dataInizio = new DatePicker();
+        dataInizio.setPromptText("Data Inizio");
+        dataInizio.setValue(LocalDate.now().plusDays(1)); // Default: domani
+
+        DatePicker dataFine = new DatePicker();
+        dataFine.setPromptText("Data Fine");
+        dataFine.setValue(LocalDate.now().plusDays(7)); // Default: +1 settimana
+
+        ComboBox<Integer> viaggiPerTratta = new ComboBox<>();
+        viaggiPerTratta.getItems().addAll(1, 2, 3, 4, 5, 6);
+        viaggiPerTratta.setValue(4);
+        viaggiPerTratta.setPromptText("Viaggi per tratta");
+
+        Button generaBtn = new Button("Genera Viaggi");
+        generaBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
+        generaBtn.setOnAction(e -> {
+            LocalDate inizio = dataInizio.getValue();
+            LocalDate fine = dataFine.getValue();
+
+            if (inizio == null || fine == null) {
+                mostraErrore("Date Obbligatorie", "Selezionare entrambe le date");
+                return;
+            }
+
+            if (inizio.isAfter(fine)) {
+                mostraErrore("Date Non Valide", "Data inizio deve essere precedente alla data fine");
+                return;
+            }
+
+            int viaggiTratta = viaggiPerTratta.getValue();
+
+            long giorni = ChronoUnit.DAYS.between(inizio, fine) + 1;
+            long viaggiTotali = 132 * viaggiTratta * giorni;
+
+            Alert conferma = new Alert(Alert.AlertType.CONFIRMATION);
+            conferma.setTitle("Conferma Generazione");
+            conferma.setHeaderText("Generare " + String.format("%,d", viaggiTotali) + " viaggi?");
+
+            Optional<ButtonType> result = conferma.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                adminViaggi.generaViaggi(inizio, fine, viaggiTratta);
+            }
+        });
+
+        box.getChildren().addAll(
+                title,
+                new Label("Periodo Generazione:"),
+                dataInizio,
+                dataFine,
+                new Label("Configurazione:"),
+                viaggiPerTratta,
+                generaBtn
+        );
+
         return box;
     }
 
@@ -359,7 +450,19 @@ public class ServerAdminApp extends Application {
             promozioneIdField.clear();
         });
 
-        box.getChildren().addAll(title, promozioneIdField, applicaBtn);
+        Button pulisciBtn = new Button("Cancella Tutte Le Promozioni");
+        pulisciBtn.setStyle("-fx-background-color: darkred; -fx-text-fill: white; -fx-font-weight: bold;");
+        pulisciBtn.setOnAction(e -> {
+            Alert conferma = new Alert(Alert.AlertType.WARNING);
+            conferma.setHeaderText("Eliminare TUTTE le Promozioni?");
+            conferma.setContentText("Questa operazione eliminerà definitivamente tutte le promozioni dal database.");
+            Optional<ButtonType> result = conferma.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                adminPromozioni.eliminaTutteLePromozioni();
+            }
+        });
+
+        box.getChildren().addAll(title, promozioneIdField, applicaBtn, pulisciBtn);
 
         return box;
     }

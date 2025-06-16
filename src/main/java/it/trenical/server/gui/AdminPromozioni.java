@@ -4,9 +4,11 @@ import it.trenical.common.promozioni.Promozione;
 import it.trenical.common.promozioni.factoryMethod.PromozioneFactory;
 import it.trenical.common.viaggi.StatoViaggio;
 import it.trenical.common.viaggi.Viaggio;
+import it.trenical.server.db.DatabaseManager;
 import it.trenical.server.db.dao.PromozioneDAO;
 import it.trenical.server.db.dao.ViaggioDAO;
 
+import java.sql.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -163,4 +165,40 @@ public class AdminPromozioni {
         }
     }
 
+    public void eliminaTutteLePromozioni() {
+        logger.warning("Eliminazione di TUTTE le promozioni dal database");
+
+        try {
+            String countSql = "SELECT COUNT(*) FROM promozioni";
+            Connection conn = DatabaseManager.getInstance().getConnection();
+            Statement countStmt = conn.createStatement();
+            ResultSet rs = countStmt.executeQuery(countSql);
+
+            int promozioniTotali = 0;
+            if (rs.next()) {
+                promozioniTotali = rs.getInt(1);
+            }
+            countStmt.close();
+
+            if (promozioniTotali == 0) {
+                gui.mostraSuccesso("Database Già Pulito", "Il database non contiene promozioni da eliminare.");
+                return;
+            }
+
+            String deleteSql = "DELETE FROM promozioni";
+            Statement deleteStmt = conn.createStatement();
+            int promozioniEliminate = deleteStmt.executeUpdate(deleteSql);
+            deleteStmt.close();
+
+            String messaggio = String.format("Promozioni eliminate: %,d\n", promozioniEliminate);
+
+            gui.mostraSuccesso("Eliminazione Totale Completata", messaggio);
+            logger.warning("Eliminate tutte le " + promozioniEliminate + " promozioni dal database");
+
+        } catch (Exception e) {
+            String errorMsg = "Errore durante l'eliminazione totale: " + e.getMessage();
+            logger.severe(errorMsg);
+            gui.mostraErrore("Errore Eliminazione Totale", errorMsg);
+        }
+    }
 }

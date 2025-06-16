@@ -2,9 +2,17 @@ package it.trenical.server.gui;
 
 import it.trenical.common.viaggi.StatoViaggio;
 import it.trenical.common.viaggi.Viaggio;
+import it.trenical.server.db.DatabaseManager;
 import it.trenical.server.db.dao.ViaggioDAO;
+import it.trenical.server.tratte.*;
+import it.trenical.server.treni.*;
+import it.trenical.server.treni.builder.*;
 
+import java.sql.*;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -146,5 +154,157 @@ public class AdminViaggi {
             gui.mostraErrore("Errore","Errore durante il cambio binario: " + e.getMessage());
         }
     }
+
+    public void generaViaggi(LocalDate dataInizio, LocalDate dataFine, int viaggiPerTratta) {
+
+        logger.info("Inizio generazione viaggi sistematica dal " + dataInizio + " al " + dataFine);
+        try {
+            List<Tratta> tutteLeTratte = TrattaUtil.creaTutteLeTratte();
+            List<Treno> treniDisponibili = creaTreniBase();
+
+            long giorni = ChronoUnit.DAYS.between(dataInizio, dataFine) + 1;
+            long viaggiTotaliAttesi = tutteLeTratte.size() * viaggiPerTratta * giorni;
+
+            logger.info("Viaggi totali attesi: " + viaggiTotaliAttesi);
+
+            int viaggiCreati = 0;
+
+            LocalDate dataCorrente = dataInizio;
+            while (!dataCorrente.isAfter(dataFine)) {
+                logger.info("Processando data: " + dataCorrente);
+                for (Tratta tratta : tutteLeTratte) {
+                    for (int i = 0; i < viaggiPerTratta; i++) {
+                        int maxTentativi = 100;
+                        boolean viaggioCreato = false;
+                        for (int tentativo = 0; tentativo < maxTentativi && !viaggioCreato; tentativo++) {
+                            try {
+                                Treno trenoCasuale = treniDisponibili.get((int) (Math.random() * treniDisponibili.size()));
+                                Viaggio nuovoViaggio = new Viaggio(trenoCasuale, tratta, dataCorrente);
+                                boolean salvato = viaggioDAO.save(nuovoViaggio);
+                                if (salvato) {
+                                    viaggiCreati++;
+                                    viaggioCreato = true;
+                                }
+                            } catch (IllegalArgumentException e) {
+                                if (e.getMessage().contains("passato")) {
+                                    logger.fine("Tentativo ignorato - orario nel passato per tratta: " + tratta);
+                                }
+                            } catch (Exception e) {
+                                logger.warning("Errore imprevisto creazione viaggio: " + e.getMessage());
+                            }
+                        }
+                        if (!viaggioCreato) {
+                            logger.warning("ATTENZIONE: Impossibile creare viaggio per tratta " +
+                                    tratta + " dopo " + maxTentativi + " tentativi");
+                        }
+                    }
+                }
+                dataCorrente = dataCorrente.plusDays(1);
+            }
+            String risultatiFinali = String.format(
+                            "Viaggi attesi: %,d\n" +
+                            "Viaggi creati con successo: %,d",
+                            viaggiTotaliAttesi,
+                            viaggiCreati
+            );
+
+            logger.info(risultatiFinali);
+            if (viaggiCreati == viaggiTotaliAttesi) {
+                gui.mostraSuccesso("Generazione Completata",
+                        String.format("Creati tutti i %,d viaggi !", viaggiCreati));
+            } else {
+                gui.mostraSuccesso("Generazione Parzialmente Completata",
+                        String.format("Creati %,d viaggi su %,d richiesti",
+                                viaggiCreati, viaggiTotaliAttesi));
+            }
+
+            logger.info("Generazione completata");
+
+        } catch (Exception e) {
+            String errorMsg = "Errore durante la generazione: " + e.getMessage();
+            logger.severe(errorMsg);
+            e.printStackTrace();
+            gui.mostraErrore("Errore Generazione", errorMsg);
+        }
+    }
+
+    public void eliminaViaggiTerminati() {
+        logger.info("Eliminazione viaggi passati (data < oggi)");
+
+        try {
+            String sql = "DELETE FROM viaggi WHERE data_viaggio < ?";
+
+            Connection conn = DatabaseManager.getInstance().getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, LocalDate.now().toString());
+
+            int viaggiEliminati = stmt.executeUpdate();
+            stmt.close();
+
+            String messaggio = String.format(
+                    "Eliminati %,d viaggi del passato\n" +
+                            "(con data precedente a %s)",
+                    viaggiEliminati,
+                    LocalDate.now()
+            );
+
+            gui.mostraSuccesso("Pulizia Viaggi Passati Completata", messaggio);
+            logger.info("Viaggi passati eliminati: " + viaggiEliminati);
+
+        } catch (Exception e) {
+            String errorMsg = "Errore durante l'eliminazione viaggi passati: " + e.getMessage();
+            logger.severe(errorMsg);
+            gui.mostraErrore("Errore Eliminazione", errorMsg);
+        }
+    }
+
+    public void eliminaTuttiIViaggi() {
+        logger.warning("Eliminazione di TUTTI i viaggi dal database");
+
+        try {
+            String countSql = "SELECT COUNT(*) FROM viaggi";
+            Connection conn = DatabaseManager.getInstance().getConnection();
+            Statement countStmt = conn.createStatement();
+            ResultSet rs = countStmt.executeQuery(countSql);
+
+            int viaggiTotali = 0;
+            if (rs.next()) {
+                viaggiTotali = rs.getInt(1);
+            }
+            countStmt.close();
+
+            if (viaggiTotali == 0) {
+                gui.mostraSuccesso("Database Già Pulito", "Il database non contiene viaggi da eliminare.");
+                return;
+            }
+
+            String deleteSql = "DELETE FROM viaggi";
+            Statement deleteStmt = conn.createStatement();
+            int viaggiEliminati = deleteStmt.executeUpdate(deleteSql);
+            deleteStmt.close();
+
+            String messaggio = String.format("Viaggi eliminati: %,d\n" ,viaggiEliminati);
+
+            gui.mostraSuccesso("Eliminazione Totale Completata", messaggio);
+            logger.warning("Eliminati tutti i " + viaggiEliminati + " viaggi dal database");
+
+        } catch (Exception e) {
+            String errorMsg = "Errore durante l'eliminazione totale: " + e.getMessage();
+            logger.severe(errorMsg);
+            gui.mostraErrore("Errore Eliminazione Totale", errorMsg);
+        }
+    }
+
+    private List<Treno> creaTreniBase() {
+        TrenoDirector director = new TrenoDirector();
+        List<Treno> treni = new ArrayList<>();
+
+        treni.add(director.costruisciTrenoEconomy("Economy"));
+        treni.add(director.costruisciTrenoStandard("Standard"));
+        treni.add(director.costruisciTrenoBusiness("Business"));
+
+        return treni;
+    }
+
 
 }

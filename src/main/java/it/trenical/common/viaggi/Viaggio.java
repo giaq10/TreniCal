@@ -68,6 +68,8 @@ public class Viaggio implements Subject {
         this.dataViaggio = dataViaggio;
 
         this.orarioPartenzaProgrammato = generaOrarioRandom();
+        if(dataViaggio.equals(LocalDate.now()) && orarioPartenzaProgrammato.isBefore(LocalTime.now()))
+            throw new IllegalArgumentException("L'orario è precedente al corrente");
         this.binarioPartenza = generaBinarioRandom();
 
         CalcoloViaggioStrategy strategy = StrategyFactory.getStrategy(treno.getTipoTreno());
