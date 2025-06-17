@@ -1,5 +1,7 @@
 package it.trenical.common.stazioni;
 
+import java.util.List;
+
 public enum Stazione {
     REGGIO_CALABRIA("Reggio Calabria", 38.1144, 15.6500),
     COSENZA("Cosenza", 39.2985, 16.2538),
@@ -59,5 +61,9 @@ public enum Stazione {
             }
         }
         throw new IllegalArgumentException("Stazione non trovata: " + nome);
+    }
+
+    public static List<Stazione> getTutteLeStazioni() {
+        return List.of(REGGIO_CALABRIA, COSENZA, NAPOLI, BARI, ROMA, FIRENZE, BOLOGNA, VERONA, MILANO, TORINO, GENOVA, VENEZIA);
     }
 }

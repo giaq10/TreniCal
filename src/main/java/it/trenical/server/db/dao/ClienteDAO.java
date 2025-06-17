@@ -171,7 +171,7 @@ public class ClienteDAO {
      */
     public List<Cliente> findClientiFedelta() {
         List<Cliente> clienti = new ArrayList<>();
-        String sql = "SELECT * FROM clienti WHERE abbonamento_fedelta = 1 ORDER BY nome";
+        String sql = "SELECT * FROM clienti WHERE abbonamento_fedelta = 1 ORDER BY email";
 
         try (Connection conn = dbManager.getConnection();
              Statement stmt = conn.createStatement();

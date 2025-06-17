@@ -186,9 +186,7 @@ public class AdminViaggi {
                                     viaggioCreato = true;
                                 }
                             } catch (IllegalArgumentException e) {
-                                if (e.getMessage().contains("passato")) {
-                                    logger.fine("Tentativo ignorato - orario nel passato per tratta: " + tratta);
-                                }
+                                    logger.fine("Tentativo ignorato");
                             } catch (Exception e) {
                                 logger.warning("Errore imprevisto creazione viaggio: " + e.getMessage());
                             }

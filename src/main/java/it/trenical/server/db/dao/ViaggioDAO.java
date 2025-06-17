@@ -106,11 +106,6 @@ public class ViaggioDAO {
         return false;
     }
 
-    /**
-     * Trova un viaggio per ID
-     * @param id ID del viaggio
-     * @return Optional con il viaggio se trovato
-     */
     public Optional<Viaggio> findById(String id) {
         String sql = "SELECT * FROM viaggi WHERE id = ?";
 
@@ -133,19 +128,12 @@ public class ViaggioDAO {
         return Optional.empty();
     }
 
-    /**
-     * Cerca viaggi per tratta e data
-     * @param partenza Stazione di partenza
-     * @param arrivo Stazione di arrivo
-     * @param data Data del viaggio
-     * @return Lista viaggi trovati
-     */
-    public List<Viaggio> findByTrattaEData(Stazione partenza, Stazione arrivo, LocalDate data) {
+    public List<Viaggio> findByTratta(Stazione partenza, Stazione arrivo) {
         List<Viaggio> viaggi = new ArrayList<>();
         String sql = """
             SELECT * FROM viaggi 
-            WHERE stazione_partenza = ? AND stazione_arrivo = ? AND data_viaggio = ?
-            ORDER BY orario_partenza
+            WHERE stazione_partenza = ? AND stazione_arrivo = ? 
+            ORDER BY data_viaggio, orario_partenza
             """;
 
         try (Connection conn = dbManager.getConnection();
@@ -153,7 +141,6 @@ public class ViaggioDAO {
 
             stmt.setString(1, partenza.getNome());
             stmt.setString(2, arrivo.getNome());
-            stmt.setString(3, data.toString());
 
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
@@ -161,7 +148,7 @@ public class ViaggioDAO {
             }
 
             logger.info("Trovati " + viaggi.size() + " viaggi per " +
-                    partenza.getNome() + " → " + arrivo.getNome() + " del " + data);
+                    partenza.getNome() + " => " + arrivo.getNome());
 
         } catch (SQLException e) {
             logger.severe("Errore nella ricerca viaggi per tratta: " + e.getMessage());
@@ -170,69 +157,31 @@ public class ViaggioDAO {
         return viaggi;
     }
 
-    /**
-     * Trova viaggi per tipo treno
-     * @param tipoTreno Tipo di treno
-     * @return Lista viaggi
-     */
-    public List<Viaggio> findByTipoTreno(TipoTreno tipoTreno) {
+    public List<Viaggio> findByData(LocalDate data){
         List<Viaggio> viaggi = new ArrayList<>();
-        String sql = "SELECT * FROM viaggi WHERE tipo_treno = ? ORDER BY data_viaggio, orario_partenza";
+        String sql = """
+                SELECT * FROM viaggi 
+                WHERE data_viaggio = ? 
+                """;
 
-        try (Connection conn = dbManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try{
+            Connection connection = dbManager.getConnection();
+            PreparedStatement stmt = connection.prepareStatement(sql);
 
-            stmt.setString(1, tipoTreno.name());
+            stmt.setString(1, data.toString());
             ResultSet rs = stmt.executeQuery();
-
             while (rs.next()) {
                 viaggi.add(mapResultSetToViaggio(rs));
             }
 
-            logger.info("Trovati " + viaggi.size() + " viaggi " + tipoTreno.getNome());
+            logger.info("Trovati " + viaggi.size() + " viaggi in partenza il "+data);
 
-        } catch (SQLException e) {
-            logger.severe("Errore nella ricerca per tipo treno: " + e.getMessage());
+        }catch (SQLException e) {
+            logger.severe("Errore nella ricerca viaggi per data: " + e.getMessage());
         }
-
         return viaggi;
     }
 
-    /**
-     * Aggiorna lo stato di un viaggio
-     * @param viaggioId ID del viaggio
-     * @param nuovoStato Nuovo stato
-     * @return true se aggiornato
-     */
-    public boolean updateStato(String viaggioId, StatoViaggio nuovoStato) {
-        String sql = "UPDATE viaggi SET stato = ? WHERE id = ?";
-
-        try (Connection conn = dbManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, nuovoStato.name());
-            stmt.setString(2, viaggioId);
-
-            int rowsAffected = stmt.executeUpdate();
-
-            if (rowsAffected > 0) {
-                logger.info("Stato viaggio aggiornato: " + viaggioId + " → " + nuovoStato);
-                return true;
-            }
-
-        } catch (SQLException e) {
-            logger.severe("Errore nell'aggiornamento stato: " + e.getMessage());
-        }
-
-        return false;
-    }
-
-    /**
-     * Aggiorna i posti disponibili
-     * @param viaggioId ID del viaggio
-     * @param nuoviPostiDisponibili Nuovi posti disponibili
-     * @return true se aggiornato
-     */
     public boolean updatePostiDisponibili(String viaggioId, int nuoviPostiDisponibili) {
         String sql = "UPDATE viaggi SET posti_disponibili = ? WHERE id = ?";
 

@@ -1,5 +1,6 @@
 package it.trenical.server.gui;
 
+import it.trenical.common.stazioni.Stazione;
 import it.trenical.server.db.dao.*;
 import javafx.application.Application;
 import javafx.geometry.*;
@@ -10,6 +11,7 @@ import javafx.stage.*;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -474,37 +476,113 @@ public class ServerAdminApp extends Application {
         Label title = new Label("Visualizzazione Viaggi");
         title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
-        GridPane grid = new GridPane();
-        grid.setHgap(15);
-        grid.setVgap(15);
-        grid.setPadding(new Insets(20));
-        grid.setStyle("-fx-background-color: #2c3e50; -fx-background-radius: 10;");
+        VBox filtriBox = new VBox(10);
+        filtriBox.setStyle("-fx-background-color: lightgray; -fx-padding: 15; -fx-background-radius: 8;");
 
-        VBox viaggiBox = new VBox(10);
-        viaggiBox.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8;");
+        Label filtriTitle = new Label("Filtri di Ricerca");
+        filtriTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
 
-        Label viaggiTitle = new Label("Elenco Viaggi Database");
-        viaggiTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+        ComboBox<String> partenzaCombo = new ComboBox<>();
+        ComboBox<String> arrivoCombo = new ComboBox<>();
+
+        List<Stazione> stazioni = Stazione.getTutteLeStazioni();
+        for(Stazione s : stazioni) {
+            partenzaCombo.getItems().add(s.toString());
+            arrivoCombo.getItems().add(s.toString());
+        }
+        partenzaCombo.setPromptText("Stazione di Partenza");
+        arrivoCombo.setPromptText("Stazione di Arrivo");
+
+        HBox trattaBox = new HBox(10);
+        trattaBox.getChildren().addAll(
+                new Label("Partenza:"), partenzaCombo,
+                new Label("Arrivo:"), arrivoCombo
+        );
+
+        DatePicker dataPicker = new DatePicker();
+        dataPicker.setPromptText("Seleziona Data Viaggio");
+        dataPicker.setValue(LocalDate.now()); // Default: oggi
+
+        HBox dataBox = new HBox(10);
+        dataBox.getChildren().addAll(
+                new Label("Data Viaggio:"), dataPicker
+        );
+
+        HBox filtriButtonBox = new HBox(10);
+
+        Button filtraTrattaBtn = new Button("Filtra per Tratta");
+        filtraTrattaBtn.setStyle("-fx-background-color: darkblue; -fx-text-fill: white;");
+
+        Button filtraDataBtn = new Button("Filtra per Data");
+        filtraDataBtn.setStyle("-fx-background-color: darkgreen; -fx-text-fill: white;");
+
+        Button mostraTuttiBtn = new Button("Mostra Tutti");
+        mostraTuttiBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
+
+        filtriButtonBox.getChildren().addAll(
+                filtraTrattaBtn, filtraDataBtn,
+                mostraTuttiBtn
+        );
+
+        filtriBox.getChildren().addAll(
+                filtriTitle,
+                trattaBox,
+                dataBox,
+                filtriButtonBox
+        );
+
+        VBox risultatiBox = new VBox(10);
+        risultatiBox.setStyle("-fx-background-color: lightgray; -fx-padding: 15; -fx-background-radius: 8;");
+
+        Label risultatiTitle = new Label("Risultati");
+        risultatiTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
 
         TextArea viaggiArea = new TextArea();
         viaggiArea.setPrefHeight(400);
-        viaggiArea.setPrefWidth(500);
+        viaggiArea.setPrefWidth(700);
         viaggiArea.setEditable(false);
         viaggiArea.setWrapText(true);
-        viaggiArea.setStyle("-fx-font-family: 'Courier New'; -fx-font-size: 12px;");
+        viaggiArea.setStyle("-fx-font-family: 'Courier New'; -fx-font-size: 11px;");
 
-        Button caricaViaggiBtn = new Button("Carica Viaggi");
-        caricaViaggiBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
-        caricaViaggiBtn.setOnAction(e -> {
+        risultatiBox.getChildren().addAll(risultatiTitle, viaggiArea);
+
+        filtraTrattaBtn.setOnAction(e -> {
+            String partenza = partenzaCombo.getValue();
+            String arrivo = arrivoCombo.getValue();
+
+            if (partenza == null || arrivo == null) {
+                mostraErrore("Selezione Incompleta", "Selezionare sia stazione di partenza che di arrivo");
+                return;
+            }
+
+            if (partenza.equals(arrivo)) {
+                mostraErrore("Selezione Non Valida", "Stazione di partenza e arrivo devono essere diverse");
+                return;
+            }
+
+            String risultati = adminVisualizzaDB.getViaggiPerTratta(partenza, arrivo);
+            viaggiArea.setText(risultati);
+        });
+
+        filtraDataBtn.setOnAction(e -> {
+            LocalDate dataSelezionata = dataPicker.getValue();
+
+            if (dataSelezionata == null) {
+                mostraErrore("Data Non Selezionata", "Selezionare una data per il filtro");
+                return;
+            }
+
+            String risultati = adminVisualizzaDB.getViaggiPerData(dataSelezionata);
+            viaggiArea.setText(risultati);
+        });
+
+        // 4. Mostra tutti (esistente)
+        mostraTuttiBtn.setOnAction(e -> {
             String viaggi = adminVisualizzaDB.getTuttiIViaggi();
             viaggiArea.setText(viaggi);
         });
 
-        viaggiBox.getChildren().addAll(viaggiTitle, viaggiArea, caricaViaggiBtn);
-
-        grid.add(viaggiBox, 0, 0, 2, 1);
-
-        layout.getChildren().addAll(title, grid);
+        layout.getChildren().addAll(title, filtriBox, risultatiBox);
         return layout;
     }
 
@@ -515,14 +593,8 @@ public class ServerAdminApp extends Application {
         Label title = new Label("Visualizzazione Promozioni");
         title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
-        GridPane grid = new GridPane();
-        grid.setHgap(15);
-        grid.setVgap(15);
-        grid.setPadding(new Insets(20));
-        grid.setStyle("-fx-background-color: #2c3e50; -fx-background-radius: 10;");
-
         VBox promoBox = new VBox(10);
-        promoBox.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8;");
+        promoBox.setStyle("-fx-background-color: lightgray; -fx-padding: 15; -fx-background-radius: 8;");
 
         Label promoTitle = new Label("Elenco Promozioni Database");
         promoTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
@@ -543,9 +615,8 @@ public class ServerAdminApp extends Application {
 
         promoBox.getChildren().addAll(promoTitle, promoArea, caricaPromoBtn);
 
-        grid.add(promoBox, 0, 0, 2, 1);
 
-        layout.getChildren().addAll(title, grid);
+        layout.getChildren().addAll(title, promoBox);
         return layout;
     }
 
@@ -556,14 +627,8 @@ public class ServerAdminApp extends Application {
         Label title = new Label("Visualizza Clienti");
         title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
-        GridPane grid = new GridPane();
-        grid.setHgap(15);
-        grid.setVgap(15);
-        grid.setPadding(new Insets(20));
-        grid.setStyle("-fx-background-color: #2c3e50; -fx-background-radius: 10;");
-
         VBox clientiBox = new VBox(10);
-        clientiBox.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8;");
+        clientiBox.setStyle("-fx-background-color: lightgray; -fx-padding: 15; -fx-background-radius: 8;");
 
         Label clientiTitle = new Label("Elenco Clienti Database");
         clientiTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
@@ -575,6 +640,8 @@ public class ServerAdminApp extends Application {
         clientiArea.setWrapText(true);
         clientiArea.setStyle("-fx-font-family: 'Courier New'; -fx-font-size: 12px;");
 
+        HBox buttonsBox = new HBox(10);
+
         Button caricaClientiBtn = new Button("Carica Clienti");
         caricaClientiBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
         caricaClientiBtn.setOnAction(e -> {
@@ -582,11 +649,18 @@ public class ServerAdminApp extends Application {
             clientiArea.setText(promozioni);
         });
 
-        clientiBox.getChildren().addAll(clientiTitle, clientiArea, caricaClientiBtn);
+        Button mostraAbbonatiBtn = new Button("Mostra Solo Abbonati");
+        mostraAbbonatiBtn.setStyle("-fx-background-color: darkgreen; -fx-text-fill: white;");
+        mostraAbbonatiBtn.setOnAction(e -> {
+            String abbonati = adminVisualizzaDB.getClientiAbbonati();
+            clientiArea.setText(abbonati);
+        });
 
-        grid.add(clientiBox, 0, 0, 2, 1);
+        buttonsBox.getChildren().addAll(caricaClientiBtn, mostraAbbonatiBtn);
 
-        layout.getChildren().addAll(title, grid);
+        clientiBox.getChildren().addAll(clientiTitle, clientiArea, buttonsBox);
+
+        layout.getChildren().addAll(title, clientiBox);
         return layout;
     }
 
