@@ -1,8 +1,8 @@
 package it.trenical.server.db.dao;
 
-import it.trenical.common.promozioni.Promozione;
-import it.trenical.common.promozioni.PromozioneStandard;
-import it.trenical.common.promozioni.PromozioneFedelta;
+import it.trenical.server.promozioni.Promozione;
+import it.trenical.server.promozioni.PromozioneStandard;
+import it.trenical.server.promozioni.PromozioneFedelta;
 import it.trenical.server.db.DatabaseManager;
 
 import java.sql.*;

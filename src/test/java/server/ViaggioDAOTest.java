@@ -1,8 +1,8 @@
 package server;
 
 import it.trenical.common.stazioni.Stazione;
-import it.trenical.common.viaggi.StatoViaggio;
-import it.trenical.common.viaggi.Viaggio;
+import it.trenical.server.viaggi.StatoViaggio;
+import it.trenical.server.viaggi.Viaggio;
 import it.trenical.server.db.dao.ViaggioDAO;
 import it.trenical.server.treni.TipoTreno;
 import it.trenical.server.treni.Treno;

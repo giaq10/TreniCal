@@ -1,7 +1,7 @@
-package it.trenical.common.promozioni.factoryMethod;
+package it.trenical.server.promozioni.factoryMethod;
 
-import it.trenical.common.promozioni.Promozione;
-import it.trenical.common.promozioni.PromozioneStandard;
+import it.trenical.server.promozioni.Promozione;
+import it.trenical.server.promozioni.PromozioneStandard;
 
 public class PromozioneStandardFactory extends PromozioneFactory {
     @Override

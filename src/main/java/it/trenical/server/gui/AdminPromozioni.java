@@ -1,9 +1,9 @@
 package it.trenical.server.gui;
 
-import it.trenical.common.promozioni.Promozione;
-import it.trenical.common.promozioni.factoryMethod.PromozioneFactory;
-import it.trenical.common.viaggi.StatoViaggio;
-import it.trenical.common.viaggi.Viaggio;
+import it.trenical.server.promozioni.Promozione;
+import it.trenical.server.promozioni.factoryMethod.PromozioneFactory;
+import it.trenical.server.viaggi.StatoViaggio;
+import it.trenical.server.viaggi.Viaggio;
 import it.trenical.server.db.DatabaseManager;
 import it.trenical.server.db.dao.PromozioneDAO;
 import it.trenical.server.db.dao.ViaggioDAO;

@@ -1,15 +1,15 @@
-package it.trenical.common.viaggi;
+package it.trenical.server.viaggi;
 
 import it.trenical.common.observer.Notifica;
 import it.trenical.common.observer.Observer;
 import it.trenical.common.observer.TipoNotifica;
-import it.trenical.common.promozioni.Promozione;
+import it.trenical.server.promozioni.Promozione;
 import it.trenical.common.observer.Subject;
 import it.trenical.server.tratte.Tratta;
 import it.trenical.server.treni.Treno;
 import it.trenical.common.stazioni.Binario;
-import it.trenical.common.viaggi.strategy.CalcoloViaggioStrategy;
-import it.trenical.common.viaggi.strategy.StrategyFactory;
+import it.trenical.server.viaggi.strategy.CalcoloViaggioStrategy;
+import it.trenical.server.viaggi.strategy.StrategyFactory;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

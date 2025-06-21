@@ -1,4 +1,4 @@
-package it.trenical.common.promozioni;
+package it.trenical.server.promozioni;
 
 import java.util.Objects;
 

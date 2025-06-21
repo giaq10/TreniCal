@@ -1,6 +1,6 @@
 package it.trenical.common.cliente;
 
-import it.trenical.common.viaggi.Viaggio;
+import it.trenical.server.viaggi.Viaggio;
 import it.trenical.common.stazioni.Binario;
 import it.trenical.common.stazioni.Stazione;
 import it.trenical.server.treni.TipoTreno;

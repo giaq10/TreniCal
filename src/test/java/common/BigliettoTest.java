@@ -1,7 +1,7 @@
 package common;
 
 import it.trenical.common.cliente.Biglietto;
-import it.trenical.common.viaggi.Viaggio;
+import it.trenical.server.viaggi.Viaggio;
 import it.trenical.server.treni.Treno;
 import it.trenical.server.treni.TipoTreno;
 import it.trenical.server.treni.ServizioTreno;

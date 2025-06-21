@@ -1,9 +1,8 @@
 package server;
 
-import it.trenical.common.promozioni.Promozione;
-import it.trenical.common.promozioni.PromozioneStandard;
-import it.trenical.common.promozioni.PromozioneFedelta;
-import it.trenical.common.promozioni.factoryMethod.PromozioneFactory;
+import it.trenical.server.promozioni.Promozione;
+import it.trenical.server.promozioni.PromozioneStandard;
+import it.trenical.server.promozioni.factoryMethod.PromozioneFactory;
 
 import it.trenical.server.db.dao.PromozioneDAO;
 import org.junit.jupiter.api.*;

@@ -1,7 +1,7 @@
 package it.trenical.server.gui;
 
-import it.trenical.common.viaggi.StatoViaggio;
-import it.trenical.common.viaggi.Viaggio;
+import it.trenical.server.viaggi.StatoViaggio;
+import it.trenical.server.viaggi.Viaggio;
 import it.trenical.server.db.DatabaseManager;
 import it.trenical.server.db.dao.ViaggioDAO;
 import it.trenical.server.tratte.*;
@@ -10,6 +10,7 @@ import it.trenical.server.treni.builder.*;
 
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -230,27 +231,43 @@ public class AdminViaggi {
         logger.info("Eliminazione viaggi passati (data < oggi)");
 
         try {
-            String sql = "DELETE FROM viaggi WHERE data_viaggio < ?";
+            LocalDate oggi = LocalDate.now();
+            LocalTime adesso = LocalTime.now();
+
+            logger.info("Data/ora corrente: " + oggi + " " + adesso);
+
+            String sql = """
+            DELETE FROM viaggi 
+            WHERE (data_viaggio < ? OR 
+                   (data_viaggio = ? AND orario_partenza <= ?))
+            """;
 
             Connection conn = DatabaseManager.getInstance().getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, LocalDate.now().toString());
+
+            stmt.setString(1, oggi.toString());
+
+            stmt.setString(2, oggi.toString());
+
+            stmt.setString(3, adesso.toString());
 
             int viaggiEliminati = stmt.executeUpdate();
             stmt.close();
 
             String messaggio = String.format(
-                    "Eliminati %,d viaggi del passato\n" +
-                            "(con data precedente a %s)",
+                    "Eliminati %,d viaggi già partiti\n" +
+                            "(con data precedente a %s o\n" +
+                            "data odierna con orario <= %s)",
                     viaggiEliminati,
-                    LocalDate.now()
+                    oggi,
+                    adesso
             );
 
-            gui.mostraSuccesso("Pulizia Viaggi Passati Completata", messaggio);
-            logger.info("Viaggi passati eliminati: " + viaggiEliminati);
+            logger.info("Viaggi terminati eliminati: " + viaggiEliminati);
+            gui.mostraSuccesso("Eliminazione Viaggi Terminati", messaggio);
 
         } catch (Exception e) {
-            String errorMsg = "Errore durante l'eliminazione viaggi passati: " + e.getMessage();
+            String errorMsg = "Errore durante l'eliminazione viaggi terminati: " + e.getMessage();
             logger.severe(errorMsg);
             gui.mostraErrore("Errore Eliminazione", errorMsg);
         }

@@ -1,17 +1,17 @@
 package common;
 
 import it.trenical.common.cliente.Biglietto;
-import it.trenical.common.promozioni.PromozioneFedelta;
-import it.trenical.common.promozioni.PromozioneStandard;
+import it.trenical.server.promozioni.PromozioneFedelta;
+import it.trenical.server.promozioni.PromozioneStandard;
 import it.trenical.common.stazioni.Stazione;
-import it.trenical.common.viaggi.StatoViaggio;
-import it.trenical.common.viaggi.Viaggio;
-import it.trenical.common.viaggi.strategy.*;
+import it.trenical.server.viaggi.StatoViaggio;
+import it.trenical.server.viaggi.Viaggio;
 import it.trenical.server.treni.ServizioTreno;
 import it.trenical.server.treni.TipoTreno;
 import it.trenical.server.treni.Treno;
 import it.trenical.server.treni.builder.TrenoDirector;
 import it.trenical.server.tratte.Tratta;
+import it.trenical.server.viaggi.strategy.*;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -2,14 +2,12 @@ package server;
 
 import it.trenical.common.cliente.Biglietto;
 import it.trenical.common.cliente.Cliente;
-import it.trenical.common.viaggi.Viaggio;
+import it.trenical.server.viaggi.Viaggio;
 import it.trenical.common.stazioni.Stazione;
 import it.trenical.server.db.dao.BigliettoDAO;
 import it.trenical.server.db.dao.ClienteDAO;
 import it.trenical.server.db.dao.ViaggioDAO;
-import it.trenical.server.treni.TipoTreno;
 import it.trenical.server.treni.Treno;
-import it.trenical.server.treni.ServizioTreno;
 import it.trenical.server.treni.builder.TrenoDirector;
 import it.trenical.server.tratte.Tratta;
 

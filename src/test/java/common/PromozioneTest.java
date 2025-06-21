@@ -1,9 +1,9 @@
 package common;
 
-import it.trenical.common.promozioni.Promozione;
-import it.trenical.common.promozioni.PromozioneFedelta;
-import it.trenical.common.promozioni.PromozioneStandard;
-import it.trenical.common.promozioni.factoryMethod.PromozioneFactory;
+import it.trenical.server.promozioni.Promozione;
+import it.trenical.server.promozioni.PromozioneFedelta;
+import it.trenical.server.promozioni.PromozioneStandard;
+import it.trenical.server.promozioni.factoryMethod.PromozioneFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;

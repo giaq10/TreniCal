@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package trenical;
+
+option java_multiple_files = true;
+option java_package = "it.trenical.grpc";
+option java_outer_classname = "TrenicalProto";
+
+service TrenicalService {
+  rpc CercaViaggi(RicercaViaggioRequest) returns (RicercaViaggioResponse);
+}
+
+message RicercaViaggioRequest {
+  string stazione_partenza = 1;
+  string stazione_arrivo = 2;
+  string data_viaggio = 3;
+}
+
+message RicercaViaggioResponse {
+  repeated ViaggioDTO viaggi = 1;
+  string messaggio = 2;
+  bool successo = 3;
+}
+
+message ViaggioDTO {
+  string id = 1;
+  string tipo_treno = 2;
+  string stazione_partenza = 3;
+  string stazione_arrivo = 4;
+  string orario_partenza = 5;
+  string orario_arrivo = 6;
+  string data_viaggio = 7;
+  double prezzo = 8;
+  string codice_treno = 9;
+  string servizi = 10;
+  string durata_formattata = 11;
+  int32 distanza_km = 12;
+  string stato = 13;
+  int32 posti_disponibili = 14;
+  string binario = 15;
+}

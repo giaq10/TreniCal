@@ -1,7 +1,7 @@
 package it.trenical.server.db.dao;
 
 import it.trenical.common.cliente.Biglietto;
-import it.trenical.common.viaggi.Viaggio;
+import it.trenical.server.viaggi.Viaggio;
 import it.trenical.server.db.DatabaseManager;
 
 import java.sql.*;

@@ -2,11 +2,10 @@ package it.trenical.server.db.dao;
 
 import it.trenical.common.stazioni.Stazione;
 import it.trenical.common.stazioni.Binario;
-import it.trenical.common.viaggi.StatoViaggio;
-import it.trenical.common.viaggi.Viaggio;
+import it.trenical.server.viaggi.StatoViaggio;
+import it.trenical.server.viaggi.Viaggio;
 import it.trenical.server.treni.TipoTreno;
 import it.trenical.server.treni.Treno;
-import it.trenical.server.treni.ServizioTreno;
 import it.trenical.server.treni.builder.TrenoDirector;
 import it.trenical.server.tratte.Tratta;
 import it.trenical.server.db.DatabaseManager;
@@ -126,6 +125,36 @@ public class ViaggioDAO {
         }
 
         return Optional.empty();
+    }
+
+    public List<Viaggio> findByTrattaEData(Stazione partenza, Stazione arrivo, LocalDate data) {
+        List<Viaggio> viaggi = new ArrayList<>();
+        String sql = """
+            SELECT * FROM viaggi 
+            WHERE stazione_partenza = ? AND stazione_arrivo = ? AND data_viaggio = ?
+            ORDER BY orario_partenza
+            """;
+
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, partenza.getNome());
+            stmt.setString(2, arrivo.getNome());
+            stmt.setString(3, data.toString());
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                viaggi.add(mapResultSetToViaggio(rs));
+            }
+
+            logger.info("Trovati " + viaggi.size() + " viaggi per " +
+                    partenza.getNome() + " → " + arrivo.getNome() + " del " + data);
+
+        } catch (SQLException e) {
+            logger.severe("Errore nella ricerca viaggi per tratta: " + e.getMessage());
+        }
+
+        return viaggi;
     }
 
     public List<Viaggio> findByTratta(Stazione partenza, Stazione arrivo) {

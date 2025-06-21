@@ -1,6 +1,6 @@
-package it.trenical.common.promozioni.factoryMethod;
+package it.trenical.server.promozioni.factoryMethod;
 
-import it.trenical.common.promozioni.Promozione;
+import it.trenical.server.promozioni.Promozione;
 
 public abstract class PromozioneFactory {
     public abstract Promozione creaPromozione(String nome, double percentualeSconto);

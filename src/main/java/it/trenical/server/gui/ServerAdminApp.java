@@ -208,6 +208,9 @@ public class ServerAdminApp extends Application {
         Button eliminaPassatiBtn = new Button("Elimina Viaggi Terminati");
         eliminaPassatiBtn.setStyle("-fx-background-color: green; -fx-text-fill: white;");
         eliminaPassatiBtn.setOnAction(e -> {
+            Alert avviso = new Alert(Alert.AlertType.INFORMATION);
+            avviso.setHeaderText("Eliminazione Viaggi Terminati");
+            avviso.setContentText("Eliminerà i viaggi terminati.");
             adminViaggi.eliminaViaggiTerminati();
         });
 
@@ -270,14 +273,13 @@ public class ServerAdminApp extends Application {
         Label title = new Label("Generazione Viaggi");
         title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
 
-        // Date picker per range
         DatePicker dataInizio = new DatePicker();
         dataInizio.setPromptText("Data Inizio");
-        dataInizio.setValue(LocalDate.now().plusDays(1)); // Default: domani
+        dataInizio.setValue(LocalDate.now().plusDays(1));
 
         DatePicker dataFine = new DatePicker();
         dataFine.setPromptText("Data Fine");
-        dataFine.setValue(LocalDate.now().plusDays(7)); // Default: +1 settimana
+        dataFine.setValue(LocalDate.now().plusDays(7));
 
         ComboBox<Integer> viaggiPerTratta = new ComboBox<>();
         viaggiPerTratta.getItems().addAll(1, 2, 3, 4, 5, 6);
@@ -516,12 +518,15 @@ public class ServerAdminApp extends Application {
         Button filtraDataBtn = new Button("Filtra per Data");
         filtraDataBtn.setStyle("-fx-background-color: darkgreen; -fx-text-fill: white;");
 
+        Button filtraTrattaData = new Button("Filtra per Tratta e Data");
+        filtraTrattaData.setStyle("-fx-background-color: olive; -fx-text-fill: white;");
+
         Button mostraTuttiBtn = new Button("Mostra Tutti");
         mostraTuttiBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
 
         filtriButtonBox.getChildren().addAll(
                 filtraTrattaBtn, filtraDataBtn,
-                mostraTuttiBtn
+                filtraTrattaData ,mostraTuttiBtn
         );
 
         filtriBox.getChildren().addAll(
@@ -576,7 +581,21 @@ public class ServerAdminApp extends Application {
             viaggiArea.setText(risultati);
         });
 
-        // 4. Mostra tutti (esistente)
+        filtraTrattaData.setOnAction(e -> {
+            String partenza = partenzaCombo.getValue();
+            String arrivo = arrivoCombo.getValue();
+            LocalDate dataSelezionata = dataPicker.getValue();
+            if (partenza == null || arrivo == null || dataSelezionata == null) {
+                mostraErrore("Selezione Incompleta", "Selezionare sia stazione di partenza che di arrivo e una data");
+                return;
+            }
+            if (partenza.equals(arrivo)) {
+                mostraErrore("Selezione Non Valida", "Stazione di partenza e arrivo devono essere diverse");
+            }
+            String risultati = adminVisualizzaDB.getViaggiTrattaData(partenza,arrivo,dataSelezionata);
+            viaggiArea.setText(risultati);
+        });
+
         mostraTuttiBtn.setOnAction(e -> {
             String viaggi = adminVisualizzaDB.getTuttiIViaggi();
             viaggiArea.setText(viaggi);

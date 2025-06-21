@@ -1,4 +1,4 @@
-package it.trenical.common.promozioni;
+package it.trenical.server.promozioni;
 
 public class PromozioneStandard extends Promozione{
     public PromozioneStandard(String nome, double sconto) {
