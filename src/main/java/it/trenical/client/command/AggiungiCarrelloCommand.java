@@ -3,6 +3,7 @@ package it.trenical.client.command;
 import it.trenical.client.proxy.ControllerTrenical;
 import it.trenical.client.gui.ClientApp;
 import it.trenical.client.carrello.GestoreCarrello;
+import it.trenical.client.carrello.CarrelloItem;
 import it.trenical.grpc.ViaggioDTO;
 
 public class AggiungiCarrelloCommand implements Command {
@@ -24,14 +25,16 @@ public class AggiungiCarrelloCommand implements Command {
     @Override
     public void execute() {
         try {
-            System.out.println("Aggiungiamo al carrello "+quantita+" biglietti del viaggio "+ viaggioDTO.getId());
+            System.out.println("Aggiungiamo al carrello " + quantita + " biglietti del viaggio " + viaggioDTO.getId());
             ControllerTrenical.RisultatoCarrello risultato =
                     controllerTrenical.aggiungiAlCarrello(viaggioDTO.getId(), quantita, emailUtente);
             if (risultato.isSuccesso()) {
                 System.out.println("Server: " + risultato.getMessaggio());
-                GestoreCarrello.getInstance().aggiungiBiglietti(
-                        risultato.getBigliettiCreati()
-                );
+
+                // Aggiungi i CarrelloItem al GestoreCarrello
+                for (CarrelloItem item : risultato.getCarrelloItems()) {
+                    GestoreCarrello.getInstance().aggiungiItem(item);
+                }
 
                 String messaggio = String.format(
                         "I tuoi %d biglietti per il viaggio %s-%s sono stati aggiunti al carrello.",

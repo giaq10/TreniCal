@@ -1,6 +1,6 @@
 package it.trenical.client.carrello;
 
-import it.trenical.grpc.BigliettoCarrelloDTO;
+import it.trenical.grpc.ViaggioDTO;
 import javafx.scene.control.Label;
 
 import java.util.*;
@@ -11,11 +11,11 @@ public class GestoreCarrello {
     private static final Logger logger = Logger.getLogger(GestoreCarrello.class.getName());
     private static GestoreCarrello instance;
 
-    private final List<BigliettoCarrelloDTO> bigliettiCarrello;
+    private final List<CarrelloItem> carrielloItems;
     private TimerCarrello timer;
 
     private GestoreCarrello() {
-        this.bigliettiCarrello = new ArrayList<>();
+        this.carrielloItems = new ArrayList<>();
         logger.info("GestoreCarrello inizializzato");
     }
 
@@ -26,17 +26,40 @@ public class GestoreCarrello {
         return instance;
     }
 
-    public void aggiungiBiglietti(List<BigliettoCarrelloDTO> bigliettiDTO) {
-        logger.info("Aggiunta di " + bigliettiDTO.size() + " biglietti al carrello");
+    public void aggiungiItem(CarrelloItem nuovoItem) {
+        System.out.println("=== DEBUG AGGIUNGI ITEM ===");
+        System.out.println("Nuovo item: " + nuovoItem.getViaggioId() );
+        System.out.println("Carrello attuale size: " + carrielloItems.size());
 
-        bigliettiCarrello.addAll(bigliettiDTO);
+        for (int i = 0; i < carrielloItems.size(); i++) {
+            CarrelloItem existing = carrielloItems.get(i);
+            System.out.println("Item " + i + ": " + existing.getViaggioId() );
+        }
+        logger.info("Aggiunta item carrello: " + nuovoItem.toString());
+
+        CarrelloItem esistente = null;
+        for (CarrelloItem item : carrielloItems) {
+            if (item.getViaggioId().equals(nuovoItem.getViaggioId())) {
+                esistente = item;
+                break;
+            }
+        }
+
+        if (esistente != null) {
+            esistente.incrementaQuantita(nuovoItem.getQuantita());
+            logger.info("Viaggio già presente - Quantità aggiornata a: " + esistente.getQuantita());
+        } else {
+            carrielloItems.add(nuovoItem);
+            logger.info("Nuovo viaggio aggiunto al carrello");
+        }
+
         avviaTimer();
-
-        logger.info("Carrello aggiornato - Totale biglietti: " + bigliettiCarrello.size());
+        logger.info("Carrello aggiornato - Totale viaggi: " + carrielloItems.size() +
+                ", Totale biglietti: " + getTotaleBiglietti());
     }
 
     private void avviaTimer() {
-        if(timer!=null)
+        if(timer != null)
             timer.stopTimer();
         timer = new TimerCarrello();
         timer.startTimer();
@@ -44,31 +67,35 @@ public class GestoreCarrello {
     }
 
     public void svuotaCarrello() {
-        if (!bigliettiCarrello.isEmpty()) {
-            int numBiglietti = bigliettiCarrello.size();
-            bigliettiCarrello.clear();
-            logger.info("Carrello svuotato - " + numBiglietti + " biglietti rimossi");
+        if (!carrielloItems.isEmpty()) {
+            int numItems = carrielloItems.size();
+            int totaleBiglietti = getTotaleBiglietti();
+            carrielloItems.clear();
+            logger.info("Carrello svuotato - " + numItems + " items (" + totaleBiglietti + " biglietti) rimossi");
         }
     }
 
-    public void rimuoviBiglietto(String idTemporaneo) {
-        Iterator<BigliettoCarrelloDTO> iterator = bigliettiCarrello.iterator();
+    public void rimuoviViaggio(String viaggioId) {
+        Iterator<CarrelloItem> iterator = carrielloItems.iterator();
         while (iterator.hasNext()) {
-            BigliettoCarrelloDTO biglietto = iterator.next();
-            if (biglietto.getIdTemporaneo().equals(idTemporaneo)) {
+            CarrelloItem item = iterator.next();
+            if (item.getViaggioId().equals(viaggioId)) {
                 iterator.remove();
-                logger.info("Biglietto rimosso: " + idTemporaneo);
+                logger.info("Viaggio rimosso dal carrello: " + viaggioId + " (" + item.getQuantita() + " biglietti)");
+                return;
             }
         }
-        logger.warning("Tentativo di rimozione biglietto inesistente: " + idTemporaneo);
+        logger.warning("Tentativo di rimozione viaggio inesistente: " + viaggioId);
     }
 
-    public List<BigliettoCarrelloDTO> confermaAcquisto() {
-        List<BigliettoCarrelloDTO> bigliettiDaAcquistare = new ArrayList<>(bigliettiCarrello);
+    public List<CarrelloItem> confermaAcquisto() {
+        List<CarrelloItem> itemsDaAcquistare = new ArrayList<>(carrielloItems);
 
+        int totaleBiglietti = getTotaleBiglietti();
         svuotaCarrello();
-        logger.info("Acquisto confermato - " + bigliettiDaAcquistare.size() + " biglietti");
-        return bigliettiDaAcquistare;
+        logger.info("Acquisto confermato - " + itemsDaAcquistare.size() + " viaggi (" +
+                totaleBiglietti + " biglietti totali)");
+        return itemsDaAcquistare;
     }
 
     public Label getTimerLabel() {
@@ -78,23 +105,27 @@ public class GestoreCarrello {
         return timer.getTimerLabel();
     }
 
-    public List<BigliettoCarrelloDTO> getBigliettiCarrello() {
-        return new ArrayList<>(bigliettiCarrello);
+    public List<CarrelloItem> getCarrelloItems() {
+        return new ArrayList<>(carrielloItems);
     }
 
     public boolean isVuoto() {
-        return bigliettiCarrello.isEmpty();
+        return carrielloItems.isEmpty();
     }
 
     public int size() {
-        return bigliettiCarrello.size();
+        return carrielloItems.size();
+    }
+
+    public int getTotaleBiglietti() {
+        return carrielloItems.stream()
+                .mapToInt(CarrelloItem::getQuantita)
+                .sum();
     }
 
     public double getPrezzoTotale() {
-        double prezzoTotale = 0;
-        for(BigliettoCarrelloDTO b : bigliettiCarrello) {
-            prezzoTotale += b.getPrezzo();
-        }
-        return prezzoTotale;
+        return carrielloItems.stream()
+                .mapToDouble(CarrelloItem::getPrezzoTotale)
+                .sum();
     }
 }

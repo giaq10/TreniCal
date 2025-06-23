@@ -176,20 +176,21 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
                     .build();
 
             List<BigliettoCarrelloDTO> bigliettiCarrello = new ArrayList<>();
-            for (int i = 0; i < quantita; i++) {
-                String idTemporaneo = "PRENOTATO_" + System.currentTimeMillis() + "_" + i;
+            String idTemporaneo = "PRENOTATO_" + System.currentTimeMillis();
 
-                BigliettoCarrelloDTO dto = BigliettoCarrelloDTO.newBuilder()
-                        .setIdTemporaneo(idTemporaneo)
-                        .setPrezzo(viaggio.getPrezzo())
-                        .setInfoViaggio(viaggio.getTratta().getStazionePartenza().getNome() +
-                                " - " + viaggio.getTratta().getStazioneArrivo().getNome() +
-                                " del " + viaggio.getDataViaggio())
-                        .setViaggio(viaggioDTO)
-                        .build();
+            BigliettoCarrelloDTO dto = BigliettoCarrelloDTO.newBuilder()
+                    .setIdTemporaneo(idTemporaneo)
+                    .setViaggioId(viaggioId)
+                    .setPrezzo(viaggio.getPrezzo())
+                    .setInfoViaggio(viaggio.getTratta().getStazionePartenza().getNome() +
+                            " - " + viaggio.getTratta().getStazioneArrivo().getNome() +
+                            " del " + viaggio.getDataViaggio())
+                    .setViaggio(viaggioDTO)
+                    .setQuantita(quantita)
+                    .build();
 
-                bigliettiCarrello.add(dto);
-            }
+            bigliettiCarrello.add(dto);
+
 
             AggiungiCarrelloResponse response = AggiungiCarrelloResponse.newBuilder()
                     .setSuccesso(true)

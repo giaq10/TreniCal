@@ -1,13 +1,11 @@
 package it.trenical.client.gui;
 
+import it.trenical.client.carrello.CarrelloItem;
 import it.trenical.client.carrello.GestoreCarrello;
 import it.trenical.client.command.AggiungiCarrelloCommand;
 import it.trenical.client.command.CercaViaggiCommand;
 import it.trenical.client.command.Command;
 import it.trenical.client.proxy.ControllerTrenical;
-import it.trenical.common.cliente.Biglietto;
-import it.trenical.common.cliente.Cliente;
-import it.trenical.grpc.BigliettoCarrelloDTO;
 import it.trenical.grpc.ViaggioDTO;
 import it.trenical.common.stazioni.Stazione;
 import javafx.application.Application;
@@ -387,21 +385,11 @@ public class ClientApp extends Application {
             dettaglioStage.close();
         });
 
-        Button acquistaSubitoBtn = new Button("Acquista Subito");
-        acquistaSubitoBtn.setStyle("-fx-background-color: green; -fx-text-fill: white; -fx-font-weight: bold;");
-        acquistaSubitoBtn.setOnAction(e -> {
-            int quantita = qntSpinner.getValue();
-
-            System.out.println("Acquisto diretto: " + quantita + " biglietti per viaggio " + viaggio.getId());
-            mostraSuccesso("Acquisto", "Procedura di acquisto avviata per " + quantita + " biglietto/i!");
-            dettaglioStage.close();
-        });
-
         Button chiudiBtn = new Button("Chiudi");
         chiudiBtn.setStyle("-fx-background-color: red; -fx-text-fill: white;");
         chiudiBtn.setOnAction(e -> dettaglioStage.close());
 
-        azioniBox.getChildren().addAll(acquistaSubitoBtn, aggiungiCarrelloBtn, chiudiBtn);
+        azioniBox.getChildren().addAll(aggiungiCarrelloBtn, chiudiBtn);
 
         acquistaBox.getChildren().addAll(acquistaLabel, prezzoBox, contatoreBox, azioniBox);
 
@@ -486,7 +474,7 @@ public class ClientApp extends Application {
             HBox headerBox = new HBox(10);
             headerBox.setAlignment(Pos.CENTER_LEFT);
 
-            Label bigliettiTitle = new Label("Biglietti nel Carrello (" + carrello.size() + ")");
+            Label bigliettiTitle = new Label("Biglietti nel Carrello (" + carrello.getTotaleBiglietti() + ")");
             bigliettiTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
 
             Label prezzoTotale = new Label("Totale: €" + String.format("%.2f", carrello.getPrezzoTotale()));
@@ -508,7 +496,7 @@ public class ClientApp extends Application {
             headerBox.getChildren().addAll(bigliettiTitle, spacer, timerBox, prezzoTotale);
             carrelloBox.getChildren().add(headerBox);
 
-            for (BigliettoCarrelloDTO biglietto : carrello.getBigliettiCarrello()) {
+            for (CarrelloItem item : carrello.getCarrelloItems()) {
                 HBox bigliettoBox = new HBox(10);
                 bigliettoBox.setStyle("-fx-background-color: white; -fx-padding: 10; -fx-background-radius: 5;");
                 bigliettoBox.setAlignment(Pos.CENTER_LEFT);
@@ -516,14 +504,15 @@ public class ClientApp extends Application {
                 VBox infoBox = new VBox(2);
 
                 String infoBiglietto = String.format(
-                        "%s, %s-%s, partenza: %s alle %s, arrivo: %s alle %s",
-                        biglietto.getViaggio().getTipoTreno(),
-                        biglietto.getViaggio().getStazionePartenza(),
-                        biglietto.getViaggio().getStazioneArrivo(),
-                        biglietto.getViaggio().getDataPartenza(),
-                        biglietto.getViaggio().getOrarioPartenza(),
-                        biglietto.getViaggio().getDataArrivo(),
-                        biglietto.getViaggio().getOrarioArrivo()
+                        "%s, %s-%s, partenza: %s alle %s, arrivo: %s alle %s. Quantita:%d",
+                        item.getViaggio().getTipoTreno(),
+                        item.getViaggio().getStazionePartenza(),
+                        item.getViaggio().getStazioneArrivo(),
+                        item.getViaggio().getDataPartenza(),
+                        item.getViaggio().getOrarioPartenza(),
+                        item.getViaggio().getDataArrivo(),
+                        item.getViaggio().getOrarioArrivo(),
+                        item.getQuantita()
                 );
                 Label infoBigliettoLabel = new Label(infoBiglietto);
                 infoBigliettoLabel.setStyle("-fx-font-weight: bold;");
@@ -533,17 +522,11 @@ public class ClientApp extends Application {
                 Region spacerBiglietto = new Region();
                 HBox.setHgrow(spacerBiglietto, Priority.ALWAYS);
 
-                Label prezzoBiglietto = new Label("€" + String.format("%.2f", biglietto.getPrezzo()));
+                Label prezzoBiglietto = new Label("€" + String.format("%.2f", item.getPrezzo()));
                 prezzoBiglietto.setStyle("-fx-font-weight: bold; -fx-text-fill: green;");
 
-                Button rimuoviBiglietto = new Button("Rimuovi");
-                rimuoviBiglietto.setStyle("-fx-background-color: red; -fx-text-fill: white; -fx-font-size: 10px;");
-                rimuoviBiglietto.setOnAction(e -> {
-                    carrello.rimuoviBiglietto(biglietto.getIdTemporaneo());
-                    aggiornaTabCarrello();
-                });
+                bigliettoBox.getChildren().addAll(infoBox, spacerBiglietto, prezzoBiglietto);
 
-                bigliettoBox.getChildren().addAll(infoBox, spacerBiglietto, prezzoBiglietto, rimuoviBiglietto);
                 carrelloBox.getChildren().add(bigliettoBox);
             }
 

@@ -61,4 +61,5 @@ message BigliettoCarrelloDTO {
   double prezzo = 3;
   string info_viaggio = 4;
   ViaggioDTO viaggio = 5;
+  int32 quantita = 6;
 }
