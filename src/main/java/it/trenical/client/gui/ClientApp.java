@@ -1,8 +1,13 @@
 package it.trenical.client.gui;
 
+import it.trenical.client.carrello.GestoreCarrello;
+import it.trenical.client.command.AggiungiCarrelloCommand;
 import it.trenical.client.command.CercaViaggiCommand;
 import it.trenical.client.command.Command;
 import it.trenical.client.proxy.ControllerTrenical;
+import it.trenical.common.cliente.Biglietto;
+import it.trenical.common.cliente.Cliente;
+import it.trenical.grpc.BigliettoCarrelloDTO;
 import it.trenical.grpc.ViaggioDTO;
 import it.trenical.common.stazioni.Stazione;
 import javafx.application.Application;
@@ -25,6 +30,7 @@ public class ClientApp extends Application {
     private boolean abbonamentoFedelta = true;
 
     private TabPane mainTabPane;
+    private VBox layoutCarrello;
 
     private ListView<ViaggioDTO> viaggiListView;
     private ControllerTrenical controllerTrenical;
@@ -284,14 +290,11 @@ public class ClientApp extends Application {
         trattaLabel.setStyle("-fx-font-weight: bold;");
         infoGrid.add(trattaLabel, 1, riga++);
 
-        infoGrid.add(new Label("Data:"), 0, riga);
-        infoGrid.add(new Label(viaggio.getDataViaggio()), 1, riga++);
-
         infoGrid.add(new Label("Partenza:"), 0, riga);
-        infoGrid.add(new Label(viaggio.getOrarioPartenza()), 1, riga++);
+        infoGrid.add(new Label(viaggio.getDataPartenza()+" alle "+viaggio.getOrarioPartenza()), 1, riga++);
 
         infoGrid.add(new Label("Arrivo:"), 0, riga);
-        infoGrid.add(new Label(viaggio.getOrarioArrivo()), 1, riga++);
+        infoGrid.add(new Label(viaggio.getDataArrivo()+" alle "+viaggio.getOrarioArrivo()), 1, riga++);
 
         infoGrid.add(new Label("Treno:"), 0, riga);
         infoGrid.add(new Label(viaggio.getTipoTreno()), 1, riga++);
@@ -372,10 +375,15 @@ public class ClientApp extends Application {
         aggiungiCarrelloBtn.setOnAction(e -> {
             int quantita = qntSpinner.getValue();
 
+            AggiungiCarrelloCommand command = new AggiungiCarrelloCommand(
+                    controllerTrenical,
+                    this,
+                    quantita,
+                    emailUtente,
+                    viaggio
+            );
 
-
-            System.out.println("Aggiunto al carrello: " + quantita + " biglietti per viaggio " + viaggio.getId());
-            mostraSuccesso("Carrello", quantita + " biglietto/i aggiunto/i al carrello!");
+            command.execute();
             dettaglioStage.close();
         });
 
@@ -441,16 +449,126 @@ public class ClientApp extends Application {
     }
 
     private VBox creaTabCarrello() {
-        VBox layout = new VBox(15);
-        layout.setPadding(new Insets(20));
+        layoutCarrello = new VBox(15);
+        layoutCarrello.setPadding(new Insets(20));
 
         Label title = new Label("Carrello");
         title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
+        aggiornaContenutoCarrello();
+
+        layoutCarrello.getChildren().add(title);
+        return layoutCarrello;
+    }
+
+    public void aggiornaTabCarrello() {
+        layoutCarrello.getChildren().clear();
+
+        Label title = new Label("Carrello");
+        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        layoutCarrello.getChildren().add(title);
+
+        aggiornaContenutoCarrello();
+    }
 
 
-        layout.getChildren().addAll(title);
-        return layout;
+    private void aggiornaContenutoCarrello() {
+        GestoreCarrello carrello = GestoreCarrello.getInstance();
+
+        if (carrello.isVuoto()) {
+            Label vuotoLabel = new Label("Il carrello è vuoto");
+            vuotoLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: gray; -fx-font-weight: bold;");
+            layoutCarrello.getChildren().add(vuotoLabel);
+        } else {
+            VBox carrelloBox = new VBox(10);
+            carrelloBox.setStyle("-fx-background-color: lightgray; -fx-padding: 15; -fx-background-radius: 8;");
+
+            HBox headerBox = new HBox(10);
+            headerBox.setAlignment(Pos.CENTER_LEFT);
+
+            Label bigliettiTitle = new Label("Biglietti nel Carrello (" + carrello.size() + ")");
+            bigliettiTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+
+            Label prezzoTotale = new Label("Totale: €" + String.format("%.2f", carrello.getPrezzoTotale()));
+            prezzoTotale.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: green;");
+
+            VBox timerBox = new VBox(2);
+            timerBox.setAlignment(Pos.CENTER);
+
+            Label timerText = new Label("Tempo rimanente:");
+            timerText.setStyle("-fx-font-size: 12px; -fx-text-fill: gray;");
+
+            Label timerLabel = carrello.getTimerLabel();
+
+            timerBox.getChildren().addAll(timerText, timerLabel);
+
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+
+            headerBox.getChildren().addAll(bigliettiTitle, spacer, timerBox, prezzoTotale);
+            carrelloBox.getChildren().add(headerBox);
+
+            for (BigliettoCarrelloDTO biglietto : carrello.getBigliettiCarrello()) {
+                HBox bigliettoBox = new HBox(10);
+                bigliettoBox.setStyle("-fx-background-color: white; -fx-padding: 10; -fx-background-radius: 5;");
+                bigliettoBox.setAlignment(Pos.CENTER_LEFT);
+
+                VBox infoBox = new VBox(2);
+
+                String infoBiglietto = String.format(
+                        "%s, %s-%s, partenza: %s alle %s, arrivo: %s alle %s",
+                        biglietto.getViaggio().getTipoTreno(),
+                        biglietto.getViaggio().getStazionePartenza(),
+                        biglietto.getViaggio().getStazioneArrivo(),
+                        biglietto.getViaggio().getDataPartenza(),
+                        biglietto.getViaggio().getOrarioPartenza(),
+                        biglietto.getViaggio().getDataArrivo(),
+                        biglietto.getViaggio().getOrarioArrivo()
+                );
+                Label infoBigliettoLabel = new Label(infoBiglietto);
+                infoBigliettoLabel.setStyle("-fx-font-weight: bold;");
+
+                infoBox.getChildren().addAll(infoBigliettoLabel);
+
+                Region spacerBiglietto = new Region();
+                HBox.setHgrow(spacerBiglietto, Priority.ALWAYS);
+
+                Label prezzoBiglietto = new Label("€" + String.format("%.2f", biglietto.getPrezzo()));
+                prezzoBiglietto.setStyle("-fx-font-weight: bold; -fx-text-fill: green;");
+
+                Button rimuoviBiglietto = new Button("Rimuovi");
+                rimuoviBiglietto.setStyle("-fx-background-color: red; -fx-text-fill: white; -fx-font-size: 10px;");
+                rimuoviBiglietto.setOnAction(e -> {
+                    carrello.rimuoviBiglietto(biglietto.getIdTemporaneo());
+                    aggiornaTabCarrello();
+                });
+
+                bigliettoBox.getChildren().addAll(infoBox, spacerBiglietto, prezzoBiglietto, rimuoviBiglietto);
+                carrelloBox.getChildren().add(bigliettoBox);
+            }
+
+            HBox azioniBox = new HBox(10);
+            azioniBox.setAlignment(Pos.CENTER);
+
+            Button svuotaBtn = new Button("Svuota Carrello");
+            svuotaBtn.setStyle("-fx-background-color: red; -fx-text-fill: white;");
+            svuotaBtn.setOnAction(e -> {
+                carrello.svuotaCarrello();
+                aggiornaTabCarrello();
+            });
+
+            Button acquistaBtn = new Button("Acquista Tutto");
+            acquistaBtn.setStyle("-fx-background-color: green; -fx-text-fill: white;");
+            acquistaBtn.setOnAction(e -> {
+
+                mostraSuccesso("Acquisto", "Funzionalità di acquisto non ancora implementata");
+            });
+
+            azioniBox.getChildren().addAll(svuotaBtn, acquistaBtn);
+            carrelloBox.getChildren().add(azioniBox);
+
+            layoutCarrello.getChildren().add(carrelloBox);
+        }
     }
 
     private VBox creaTabProfilo() {

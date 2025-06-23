@@ -8,6 +8,7 @@ option java_outer_classname = "TrenicalProto";
 
 service TrenicalService {
   rpc CercaViaggi(RicercaViaggioRequest) returns (RicercaViaggioResponse);
+  rpc AggiungiAlCarrello(AggiungiCarrelloRequest) returns (AggiungiCarrelloResponse);
 }
 
 message RicercaViaggioRequest {
@@ -29,13 +30,35 @@ message ViaggioDTO {
   string stazione_arrivo = 4;
   string orario_partenza = 5;
   string orario_arrivo = 6;
-  string data_viaggio = 7;
-  double prezzo = 8;
-  string codice_treno = 9;
-  string servizi = 10;
-  string durata_formattata = 11;
-  int32 distanza_km = 12;
-  string stato = 13;
-  int32 posti_disponibili = 14;
-  string binario = 15;
+  string data_partenza = 7;
+  string data_arrivo = 8;
+  double prezzo = 9;
+  string codice_treno = 10;
+  string servizi = 11;
+  string durata_formattata = 12;
+  int32 distanza_km = 13;
+  string stato = 14;
+  int32 posti_disponibili = 15;
+  string binario = 16;
+}
+
+message AggiungiCarrelloRequest {
+  string viaggio_id = 1;
+  int32 quantita = 2;
+  string email_utente = 3;
+}
+
+message AggiungiCarrelloResponse {
+  bool successo = 1;
+  string messaggio = 2;
+  int32 posti_rimanenti = 3;
+  repeated BigliettoCarrelloDTO biglietti_creati = 4;
+}
+
+message BigliettoCarrelloDTO {
+  string id_temporaneo = 1;
+  string viaggio_id = 2;
+  double prezzo = 3;
+  string info_viaggio = 4;
+  ViaggioDTO viaggio = 5;
 }

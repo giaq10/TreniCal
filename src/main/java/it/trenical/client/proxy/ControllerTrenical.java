@@ -73,8 +73,33 @@ public class ControllerTrenical {
         }
     }
 
+    public RisultatoCarrello aggiungiAlCarrello(String viaggioId, int quantita, String emailUtente) {
+        logger.info("Aggiunta carrello: " + viaggioId + " - Quantità: " + quantita + " - Utente: " + emailUtente);
+        try {
+            AggiungiCarrelloRequest request = AggiungiCarrelloRequest.newBuilder()
+                    .setViaggioId(viaggioId)
+                    .setQuantita(quantita)
+                    .setEmailUtente(emailUtente)
+                    .build();
+            AggiungiCarrelloResponse response = blockingStub.aggiungiAlCarrello(request);
 
-
+            RisultatoCarrello risultato = new RisultatoCarrello(
+                    response.getSuccesso(),
+                    response.getMessaggio(),
+                    response.getPostiRimanenti(),
+                    response.getBigliettiCreatiList()
+            );
+            logger.info("Aggiunta carrello completata: " + risultato.getMessaggio());
+            return risultato;
+        } catch (StatusRuntimeException e) {
+            logger.severe("Errore nella chiamata gRPC carrello: " + e.getStatus());
+            String messaggio = "Errore di connessione al server";
+            return new RisultatoCarrello(false, messaggio, 0, null);
+        } catch (Exception e) {
+            logger.severe("Errore imprevisto carrello: " + e.getMessage());
+            return new RisultatoCarrello(false, "Errore imprevisto: " + e.getMessage(), 0, null);
+        }
+    }
 
     public static class RisultatoRicerca {
         private final boolean successo;
@@ -90,5 +115,25 @@ public class ControllerTrenical {
         public boolean isSuccesso() { return successo; }
         public String getMessaggio() { return messaggio; }
         public List<ViaggioDTO> getViaggi() { return viaggi; }
+    }
+
+    public static class RisultatoCarrello {
+        private final boolean successo;
+        private final String messaggio;
+        private final int postiRimanenti;
+        private final List<BigliettoCarrelloDTO> bigliettiCreati;
+
+        public RisultatoCarrello(boolean successo, String messaggio, int postiRimanenti,
+                                 List<BigliettoCarrelloDTO> bigliettiCreati) {
+            this.successo = successo;
+            this.messaggio = messaggio;
+            this.postiRimanenti = postiRimanenti;
+            this.bigliettiCreati = bigliettiCreati;
+        }
+
+        public boolean isSuccesso() { return successo; }
+        public String getMessaggio() { return messaggio; }
+        public int getPostiRimanenti() { return postiRimanenti; }
+        public List<BigliettoCarrelloDTO> getBigliettiCreati() { return bigliettiCreati; }
     }
 }

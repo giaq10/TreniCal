@@ -57,8 +57,6 @@ public class Biglietto implements Cloneable {
     @Override
     public Biglietto clone() {
         try {
-            if(!viaggio.hasPostiDisponibili())
-                throw new IllegalArgumentException("Viaggio non disponibile per acquisti multipli");
             Biglietto clonato = (Biglietto) super.clone();
             viaggio.prenotaPosto();
             return clonato;
@@ -118,7 +116,7 @@ public class Biglietto implements Cloneable {
     }
 
     public String getInfoTratta() {
-        return String.format("%s → %s",
+        return String.format("%s - %s",
                 getStazionePartenza().getNome(),
                 getStazioneArrivo().getNome());
     }
@@ -149,7 +147,7 @@ public class Biglietto implements Cloneable {
     public String toString() {
         String nomeDisplay = isCompleto() ? nominativo : "[NOME DA INSERIRE]";
         String idDisplay = id != null ? id : "[ID PENDING]";
-        return String.format("Biglietto %s: %s per %s (%s → %s, %s, €%.2f)",
+        return String.format("Biglietto %s: %s per %s (%s - %s, %s, €%.2f)",
                 idDisplay, nomeDisplay, getCodiceTreno(),
                 getStazionePartenza().getNome(), getStazioneArrivo().getNome(),
                 getDataViaggio(), getPrezzo());

@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 
@@ -64,7 +65,7 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
         } catch (Exception e) {
             logger.severe("Errore durante la ricerca viaggi: " + e.getMessage());
             e.printStackTrace();
-            inviaRispostaErrore(responseObserver, "Errore interno del server");
+            inviaRispostaRicercaErrore(responseObserver, "Errore interno del server");
         }
     }
 
@@ -76,7 +77,8 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
                 .setStazioneArrivo(viaggio.getTratta().getStazioneArrivo().getNome())
                 .setOrarioPartenza(viaggio.getOrarioPartenza().toString())
                 .setOrarioArrivo(viaggio.getOrarioArrivoEffettivo().toString())
-                .setDataViaggio(viaggio.getDataViaggio().toString())
+                .setDataPartenza(viaggio.getDataViaggio().toString())
+                .setDataArrivo(viaggio.getDataArrivo().toString())
                 .setPrezzo(viaggio.getPrezzo())
                 .setServizi(ottieniServiziTreno(viaggio))
                 .setDurataFormattata(viaggio.getDurataFormattata())
@@ -119,7 +121,7 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
         return servizi.toString();
     }
 
-    private void inviaRispostaErrore(StreamObserver<RicercaViaggioResponse> responseObserver, String messaggio) {
+    private void inviaRispostaRicercaErrore(StreamObserver<RicercaViaggioResponse> responseObserver, String messaggio) {
         RicercaViaggioResponse response = RicercaViaggioResponse.newBuilder()
                 .setSuccesso(false)
                 .setMessaggio(messaggio)
@@ -130,4 +132,96 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
 
         logger.warning("Risposta errore inviata: " + messaggio);
     }
+
+    @Override
+    public void aggiungiAlCarrello(AggiungiCarrelloRequest request,
+                                   StreamObserver<AggiungiCarrelloResponse> responseObserver) {
+        try {
+            String viaggioId = request.getViaggioId();
+            int quantita = request.getQuantita();
+            String emailUtente = request.getEmailUtente();
+
+            logger.info("Richiesta aggiunta carrello - Viaggio: " + viaggioId +
+                    ", Quantità: " + quantita + ", Utente: " + emailUtente);
+
+            Optional<Viaggio> viaggioOpt = viaggioDAO.findById(viaggioId);
+            if (viaggioOpt.isEmpty()) {
+                inviaRispostaCarrelloErrore(responseObserver, "Viaggio non trovato");
+                return;
+            }
+
+            Viaggio viaggio = viaggioOpt.get();
+            if (!viaggio.isDisponibile()) {
+                inviaRispostaCarrelloErrore(responseObserver, "Viaggio non disponibile");
+                return;
+            }
+            if (viaggio.getPostiDisponibili() < quantita) {
+                inviaRispostaCarrelloErrore(responseObserver,
+                        "Posti insufficienti. Disponibili: " + viaggio.getPostiDisponibili() +
+                                ", Richiesti: " + quantita);
+                return;
+            }
+
+            int nuoviPostiDisponibili = viaggio.getPostiDisponibili() - quantita;
+            boolean postiAggiornati = viaggioDAO.updatePostiDisponibili(viaggioId, nuoviPostiDisponibili);
+            if (!postiAggiornati) {
+                inviaRispostaCarrelloErrore(responseObserver, "Errore nell'aggiornamento posti");
+                return;
+            }
+
+            ViaggioDTO viaggioDTO = convertiViaggioInDTO(viaggio);
+
+            viaggioDTO = viaggioDTO.toBuilder()
+                    .setPostiDisponibili(nuoviPostiDisponibili)
+                    .build();
+
+            List<BigliettoCarrelloDTO> bigliettiCarrello = new ArrayList<>();
+            for (int i = 0; i < quantita; i++) {
+                String idTemporaneo = "PRENOTATO_" + System.currentTimeMillis() + "_" + i;
+
+                BigliettoCarrelloDTO dto = BigliettoCarrelloDTO.newBuilder()
+                        .setIdTemporaneo(idTemporaneo)
+                        .setPrezzo(viaggio.getPrezzo())
+                        .setInfoViaggio(viaggio.getTratta().getStazionePartenza().getNome() +
+                                " - " + viaggio.getTratta().getStazioneArrivo().getNome() +
+                                " del " + viaggio.getDataViaggio())
+                        .setViaggio(viaggioDTO)
+                        .build();
+
+                bigliettiCarrello.add(dto);
+            }
+
+            AggiungiCarrelloResponse response = AggiungiCarrelloResponse.newBuilder()
+                    .setSuccesso(true)
+                    .setMessaggio("Aggiunti " + quantita + " biglietto/i al carrello")
+                    .setPostiRimanenti(nuoviPostiDisponibili)
+                    .addAllBigliettiCreati(bigliettiCarrello)
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+            logger.info("Successo aggiunta carrello - Viaggio: " + viaggioId +
+                    ", Posti rimanenti: " + nuoviPostiDisponibili);
+
+        } catch (Exception e) {
+            logger.severe("Errore durante aggiunta al carrello: " + e.getMessage());
+            e.printStackTrace();
+            inviaRispostaCarrelloErrore(responseObserver, "Errore interno del server");
+        }
+    }
+
+    private void inviaRispostaCarrelloErrore(StreamObserver<AggiungiCarrelloResponse> responseObserver, String messaggio) {
+        AggiungiCarrelloResponse errorResponse = AggiungiCarrelloResponse.newBuilder()
+                .setSuccesso(false)
+                .setMessaggio(messaggio)
+                .setPostiRimanenti(0)
+                .build();
+
+        responseObserver.onNext(errorResponse);
+        responseObserver.onCompleted();
+
+        logger.warning("Errore carrello: " + messaggio);
+    }
+
 }
