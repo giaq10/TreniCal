@@ -338,4 +338,82 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
         logger.warning("Errore acquisto: " + messaggio);
     }
 
+    @Override
+    public void visualizzaBiglietti(VisualizzaBigliettiRequest request,
+                                    StreamObserver<VisualizzaBigliettiResponse> responseObserver) {
+        try {
+            String emailUtente = request.getEmailUtente();
+            if (emailUtente == null || emailUtente.trim().isEmpty()) {
+                inviaRispostaBigliettiErrore(responseObserver, "Email utente non specificata");
+                return;
+            }
+
+            ClienteDAO clienteDAO = new ClienteDAO();
+            boolean clienteEsiste = clienteDAO.exists(emailUtente);
+            if (!clienteEsiste) {
+                inviaRispostaBigliettiErrore(responseObserver, "Cliente non trovato");
+                return;
+            }
+
+            BigliettoDAO bigliettoDAO = new BigliettoDAO();
+            List<Biglietto> biglietti = bigliettoDAO.findByClienteEmail(emailUtente);
+
+            List<BigliettoDTO> bigliettiDTO = new ArrayList<>();
+            for (Biglietto biglietto : biglietti) {
+                try {
+                    BigliettoDTO dto = convertiBigliettoADTO(biglietto);
+                    bigliettiDTO.add(dto);
+                } catch (Exception e) {
+                    System.err.println("Errore conversione biglietto " + biglietto.getId() + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
+            String messaggio = "Trovati " + bigliettiDTO.size() + " biglietti";
+            VisualizzaBigliettiResponse response = VisualizzaBigliettiResponse.newBuilder()
+                    .setSuccesso(true)
+                    .setMessaggio(messaggio)
+                    .addAllBiglietti(bigliettiDTO)
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            System.err.println("Problema Server" + e.getMessage());
+            e.printStackTrace();
+            inviaRispostaBigliettiErrore(responseObserver, "Errore interno del server");
+        }
+    }
+
+
+    private BigliettoDTO convertiBigliettoADTO(Biglietto biglietto) {
+        return BigliettoDTO.newBuilder()
+                .setId(biglietto.getId())
+                .setNominativo(biglietto.getNominativo())
+                .setIdViaggio(biglietto.getIdViaggio())
+                .setDataAcquisto(biglietto.getDataAcquistoFormattata())
+                .setPrezzo(biglietto.getPrezzo())
+                .setDataViaggio(biglietto.getDataViaggio().toString())
+                .setOrarioPartenza(biglietto.getOrarioPartenza().toString())
+                .setOrarioArrivo(biglietto.getOrarioArrivo().toString())
+                .setStazionePartenza(biglietto.getStazionePartenza().getNome())
+                .setStazioneArrivo(biglietto.getStazioneArrivo().getNome())
+                .setTipoTreno(biglietto.getTipoTreno().toString())
+                .setBinario(biglietto.getBinarioPartenza().getDescrizione())
+                .setDurataFormattata(biglietto.getDurataFormattata())
+                .build();
+    }
+
+    private void inviaRispostaBigliettiErrore(StreamObserver<VisualizzaBigliettiResponse> responseObserver, String messaggio) {
+        VisualizzaBigliettiResponse errorResponse = VisualizzaBigliettiResponse.newBuilder()
+                .setSuccesso(false)
+                .setMessaggio(messaggio)
+                .build();
+
+        responseObserver.onNext(errorResponse);
+        responseObserver.onCompleted();
+
+        logger.warning("Errore visualizzazione biglietti: " + messaggio);
+    }
+
 }

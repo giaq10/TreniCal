@@ -30,10 +30,11 @@ public class Biglietto implements Cloneable {
         this.id = generaIdBiglietto();
     }
 
-    private Biglietto(Viaggio viaggio, LocalDateTime dataAcquistoOriginale) {
+    public Biglietto(Viaggio viaggio, String id, String nominativo, LocalDateTime dataAcquisto) {
         this.viaggio = viaggio;
-        this.dataAcquisto = dataAcquistoOriginale; // Mantiene la data originale
-        this.id = generaIdBiglietto();
+        this.id = id;
+        this.nominativo = nominativo;
+        this.dataAcquisto = dataAcquisto;
     }
 
     private String generaIdBiglietto() {

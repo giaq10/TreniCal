@@ -2,11 +2,9 @@ package it.trenical.client.gui;
 
 import it.trenical.client.carrello.CarrelloItem;
 import it.trenical.client.carrello.GestoreCarrello;
-import it.trenical.client.command.AggiungiCarrelloCommand;
-import it.trenical.client.command.CercaViaggiCommand;
-import it.trenical.client.command.Command;
-import it.trenical.client.command.ConfermaAcquistoCommand;
+import it.trenical.client.command.*;
 import it.trenical.client.proxy.ControllerTrenical;
+import it.trenical.grpc.BigliettoDTO;
 import it.trenical.grpc.ViaggioDTO;
 import it.trenical.common.stazioni.Stazione;
 import javafx.application.Application;
@@ -33,6 +31,7 @@ public class ClientApp extends Application {
     private VBox layoutCarrello;
 
     private ListView<ViaggioDTO> viaggiListView;
+    private ListView<BigliettoDTO> bigliettiListView;
     private ControllerTrenical controllerTrenical;
 
     @Override
@@ -397,7 +396,7 @@ public class ClientApp extends Application {
 
         mainLayout.getChildren().addAll(titoloDettaglio, infoBox, acquistaBox);
 
-        Scene dettaglioScene = new Scene(new ScrollPane(mainLayout), 340, 600);
+        Scene dettaglioScene = new Scene(new ScrollPane(mainLayout));
         dettaglioStage.setScene(dettaglioScene);
         dettaglioStage.setResizable(false);
         dettaglioStage.show();
@@ -410,32 +409,135 @@ public class ClientApp extends Application {
         Label title = new Label("I Miei Biglietti");
         title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
-        VBox bigliettiBox = new VBox(10);
-        bigliettiBox.setStyle("-fx-background-color: lightgray; -fx-padding: 15; -fx-background-radius: 8;");
-
-        Label bigliettiTitle = new Label("Biglietti Acquistati");
-        bigliettiTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+        VBox risultatiBigliettiBox = creaAreaRisultatiBiglietti();
 
         HBox actionsBox = new HBox(10);
         actionsBox.setAlignment(Pos.CENTER);
 
-
-
         Button caricaBigliettiBtn = new Button("Carica Biglietti");
         caricaBigliettiBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
         caricaBigliettiBtn.setOnAction(e -> {
+            Command caricaCommand = new VisualizzaBigliettiCommand(controllerTrenical, this, emailUtente);
+            caricaCommand.execute();
         });
 
-        Button modificaBigliettoBtn = new Button("Modifica Biglietto");
-        modificaBigliettoBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
-        modificaBigliettoBtn.setOnAction(e -> {
-        });
+        actionsBox.getChildren().addAll(caricaBigliettiBtn);
+        risultatiBigliettiBox.getChildren().addAll(actionsBox);
 
-        actionsBox.getChildren().addAll(caricaBigliettiBtn, modificaBigliettoBtn);
-        bigliettiBox.getChildren().addAll(bigliettiTitle, actionsBox);
-
-        layout.getChildren().addAll(title, bigliettiBox);
+        layout.getChildren().addAll(title, risultatiBigliettiBox);
         return layout;
+    }
+
+    private VBox creaAreaRisultatiBiglietti() {
+        VBox risultatiBox = new VBox();
+        risultatiBox.setStyle("-fx-background-color: lightgray; -fx-padding: 15; -fx-background-radius: 8;");
+
+        bigliettiListView = new ListView<>();
+        bigliettiListView.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 14px; -fx-font-weight: bold;");
+
+        configuraBigliettiListView();
+
+        bigliettiListView.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                BigliettoDTO bigliettoSelezionato = bigliettiListView.getSelectionModel().getSelectedItem();
+                apriDettaglioBiglietto(bigliettoSelezionato);
+            }
+        });
+
+        Label placeholderLabel = new Label("Nessun biglietto caricato.");
+        placeholderLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: gray; -fx-font-style: italic;");
+        bigliettiListView.setPlaceholder(placeholderLabel);
+
+        risultatiBox.getChildren().addAll(bigliettiListView);
+        return risultatiBox;
+    }
+
+    private void configuraBigliettiListView() {
+        bigliettiListView.setCellFactory(listView -> new ListCell<BigliettoDTO>() {
+            @Override
+            protected void updateItem(BigliettoDTO biglietto, boolean empty) {
+                super.updateItem(biglietto, empty);
+
+                if (empty || biglietto == null) {
+                    setText(null);
+                } else {
+                    String testoFormattato = String.format("%s | %s->%s | %s %s | €%.2f",
+                            biglietto.getNominativo(),
+                            biglietto.getStazionePartenza(),
+                            biglietto.getStazioneArrivo(),
+                            biglietto.getDataViaggio(),
+                            biglietto.getOrarioPartenza(),
+                            biglietto.getPrezzo()
+                    );
+                    setText(testoFormattato);
+                }
+            }
+        });
+    }
+
+    private void apriDettaglioBiglietto(BigliettoDTO biglietto) {
+        Stage dettaglioStage = new Stage();
+        dettaglioStage.setTitle("Dettaglio Biglietto - " + biglietto.getNominativo());
+
+        VBox mainLayout = new VBox(15);
+        mainLayout.setPadding(new Insets(20));
+        mainLayout.setStyle("-fx-background-color: white;");
+
+        Label titolo = new Label("Dettaglio Biglietto");
+        titolo.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: black;");
+
+        VBox infoBox = new VBox(10);
+        infoBox.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8;");
+
+        Label infoBiglietto = new Label(String.format(
+                        "Nominativo: %s\n" +
+                        "Tratta: %s -> %s\n" +
+                        "Partenza: %s\n" +
+                        "Orario: %s - %s\n" +
+                        "Tipo Treno: %s\n" +
+                        "Binario: %s\n" +
+                        "Durata: %s\n" +
+                        "Prezzo: €%.2f",
+                        biglietto.getNominativo(),
+                        biglietto.getStazionePartenza(),
+                        biglietto.getStazioneArrivo(),
+                        biglietto.getDataViaggio(),
+                        biglietto.getOrarioPartenza(),
+                        biglietto.getOrarioArrivo(),
+                        biglietto.getTipoTreno(),
+                        biglietto.getBinario(),
+                        biglietto.getDurataFormattata(),
+                        biglietto.getPrezzo()
+        ));
+
+        infoBiglietto.setStyle("-fx-font-size: 12px; -fx-font-family: 'bold'; -fx-text-fill: black;");
+        infoBox.getChildren().add(infoBiglietto);
+
+        HBox azioniBox = new HBox(10);
+        azioniBox.setAlignment(Pos.CENTER);
+
+        Button modificaBtn = new Button("Modifica Biglietto");
+        modificaBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
+        modificaBtn.setOnAction(e -> {
+
+        });
+
+        Button chiudiBtn = new Button("Chiudi");
+        chiudiBtn.setStyle("-fx-background-color: red; -fx-text-fill: white;");
+        chiudiBtn.setOnAction(e -> dettaglioStage.close());
+
+        azioniBox.getChildren().addAll(modificaBtn, chiudiBtn);
+
+        mainLayout.getChildren().addAll(titolo, infoBox, azioniBox);
+
+        Scene dettaglioScene = new Scene(new ScrollPane(mainLayout));
+        dettaglioStage.setScene(dettaglioScene);
+        dettaglioStage.setResizable(false);
+        dettaglioStage.show();
+    }
+
+    public ListView<BigliettoDTO> getBigliettiListView() {
+        return bigliettiListView;
     }
 
     private VBox creaTabCarrello() {

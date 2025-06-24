@@ -11,10 +11,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 
-/**
- * DAO per la gestione dei biglietti nel database
- * Gestisce la relazione tra clienti, viaggi e biglietti
- */
 public class BigliettoDAO {
     private static final Logger logger = Logger.getLogger(BigliettoDAO.class.getName());
     private final DatabaseManager dbManager;
@@ -30,12 +26,6 @@ public class BigliettoDAO {
         this.viaggioDAO = viaggioDAO;
     }
 
-    /**
-     * Salva un biglietto nel database
-     * @param biglietto Biglietto da salvare
-     * @param clienteEmail Email del cliente proprietario
-     * @return true se salvato con successo
-     */
     public boolean save(Biglietto biglietto, String clienteEmail) {
         if (!biglietto.isCompleto()) {
             logger.warning("Tentativo di salvare biglietto incompleto: " + biglietto.getId());
@@ -55,7 +45,6 @@ public class BigliettoDAO {
             stmt.setString(3, biglietto.getIdViaggio());
             stmt.setString(4, biglietto.getNominativo());
 
-            // Converti LocalDateTime a Timestamp per SQLite
             Timestamp timestamp = Timestamp.valueOf(biglietto.getDataAcquisto());
             stmt.setTimestamp(5, timestamp);
 
@@ -73,12 +62,6 @@ public class BigliettoDAO {
         return false;
     }
 
-    /**
-     * Salva una lista di biglietti per lo stesso cliente
-     * @param biglietti Lista biglietti da salvare
-     * @param clienteEmail Email del cliente
-     * @return numero di biglietti salvati con successo
-     */
     public int saveAll(List<Biglietto> biglietti, String clienteEmail) {
         int salvatiConSuccesso = 0;
 
@@ -93,94 +76,73 @@ public class BigliettoDAO {
         return salvatiConSuccesso;
     }
 
-    /**
-     * Trova tutti i biglietti di un cliente
-     * @param clienteEmail Email del cliente
-     * @return Lista biglietti del cliente
-     */
     public List<Biglietto> findByClienteEmail(String clienteEmail) {
         List<Biglietto> biglietti = new ArrayList<>();
 
         if (clienteEmail == null || clienteEmail.trim().isEmpty()) {
-            logger.warning("Email cliente null o vuota");
+            logger.warning("Email cliente null o vuota per findByClienteEmail");
             return biglietti;
         }
 
-        // STEP 1: Raccogli tutti gli ID e dati dei biglietti PRIMA
-        List<String> bigliettiIds = new ArrayList<>();
-        List<String> nominativi = new ArrayList<>();
-        List<String> viaggiIds = new ArrayList<>();
-        List<LocalDateTime> dateAcquisto = new ArrayList<>();
+        List<BigliettoDatabase> bigliettiDatabase = new ArrayList<>();
 
         String sql = """
-        SELECT id, viaggio_id, nominativo, data_acquisto
-        FROM biglietti
-        WHERE cliente_email = ?
-        ORDER BY data_acquisto DESC
-        """;
+                    SELECT id, nominativo, viaggio_id, data_acquisto 
+                    FROM biglietti 
+                    WHERE cliente_email = ? 
+                    """;
 
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, clienteEmail);
             ResultSet rs = stmt.executeQuery();
-
-            logger.info("Eseguendo query per cliente: " + clienteEmail);
-
             while (rs.next()) {
-                bigliettiIds.add(rs.getString("id"));
-                nominativi.add(rs.getString("nominativo"));
-                viaggiIds.add(rs.getString("viaggio_id"));
-                dateAcquisto.add(rs.getTimestamp("data_acquisto").toLocalDateTime());
+                BigliettoDatabase data = new BigliettoDatabase(
+                        rs.getString("id"),
+                        rs.getString("nominativo"),
+                        rs.getString("viaggio_id"),
+                        rs.getTimestamp("data_acquisto").toLocalDateTime()
+                );
+                bigliettiDatabase.add(data);
             }
 
-            logger.info("Raccolti " + bigliettiIds.size() + " biglietti per cliente " + clienteEmail);
-
         } catch (SQLException e) {
-            logger.severe("Errore nella ricerca biglietti per cliente: " + e.getMessage());
+            logger.severe("Errore sql " + e.getMessage());
             e.printStackTrace();
-            return biglietti;
+            return new ArrayList<>();
         }
 
-        for (int i = 0; i < bigliettiIds.size(); i++) {
-            String bigliettoId = bigliettiIds.get(i);
-            String nominativo = nominativi.get(i);
-            String viaggioId = viaggiIds.get(i);
-            LocalDateTime dataAcquisto = dateAcquisto.get(i);
-
-            logger.info("Mappando biglietto " + (i+1) + "/" + bigliettiIds.size() + ": " + bigliettoId);
-
+        for (BigliettoDatabase data : bigliettiDatabase) {
             try {
-                Optional<Viaggio> viaggioOpt = viaggioDAO.findById(viaggioId);
-                if (viaggioOpt.isEmpty()) {
-                    logger.warning("Viaggio non trovato per ID: " + viaggioId + " (biglietto " + bigliettoId + ")");
-                    continue;
-                }
+                Optional<Viaggio> viaggioOpt = viaggioDAO.findById(data.viaggioId);
 
                 Viaggio viaggio = viaggioOpt.get();
-                Biglietto biglietto = new Biglietto(viaggio);
-
-                biglietto.setNominativo(nominativo);
-
-                java.lang.reflect.Field idField = Biglietto.class.getDeclaredField("id");
-                idField.setAccessible(true);
-                idField.set(biglietto, bigliettoId);
-
-                java.lang.reflect.Field dataField = Biglietto.class.getDeclaredField("dataAcquisto");
-                dataField.setAccessible(true);
-                dataField.set(biglietto, dataAcquisto);
-
+                Biglietto biglietto = new Biglietto(viaggio, data.id, data.nominativo, data.dataAcquisto);
                 biglietti.add(biglietto);
-                logger.info("Biglietto mappato: " + biglietto.toString());
 
             } catch (Exception e) {
-                logger.severe("Errore nel mapping biglietto " + bigliettoId + ": " + e.getMessage());
+                logger.severe("Errore ricostruzione" + e.getMessage());
                 e.printStackTrace();
             }
         }
 
         logger.info("Trovati " + biglietti.size() + " biglietti per cliente " + clienteEmail);
         return biglietti;
+    }
+
+    private static class BigliettoDatabase {
+        final String id;
+        final String nominativo;
+        final String viaggioId;
+        final LocalDateTime dataAcquisto;
+
+        BigliettoDatabase(String id, String nominativo, String viaggioId, LocalDateTime dataAcquisto) {
+            this.id = id;
+            this.nominativo = nominativo;
+            this.viaggioId = viaggioId;
+            this.dataAcquisto = dataAcquisto;
+        }
     }
 
     public int deleteByClienteEmail(String clienteEmail) {
@@ -220,77 +182,5 @@ public class BigliettoDAO {
         }
 
         return false;
-    }
-
-    /**
-     * Conta il numero totale di biglietti
-     * @return Numero di biglietti
-     */
-    public int count() {
-        String sql = "SELECT COUNT(*) FROM biglietti";
-
-        try (Connection conn = dbManager.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
-
-        } catch (SQLException e) {
-            logger.severe("Errore nel conteggio biglietti: " + e.getMessage());
-        }
-
-        return 0;
-    }
-
-    /**
-     * Conta i biglietti di un cliente
-     * @param clienteEmail Email del cliente
-     * @return Numero di biglietti del cliente
-     */
-    public int countByClienteEmail(String clienteEmail) {
-        String sql = "SELECT COUNT(*) FROM biglietti WHERE cliente_email = ?";
-
-        try (Connection conn = dbManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, clienteEmail);
-            ResultSet rs = stmt.executeQuery();
-
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
-
-        } catch (SQLException e) {
-            logger.severe("Errore nel conteggio biglietti cliente: " + e.getMessage());
-        }
-
-        return 0;
-    }
-
-    /**
-     * Ottiene il cliente proprietario di un biglietto
-     * @param bigliettoId ID del biglietto
-     * @return Email del cliente proprietario
-     */
-    public Optional<String> getClienteProprietario(String bigliettoId) {
-        String sql = "SELECT cliente_email FROM biglietti WHERE id = ?";
-
-        try (Connection conn = dbManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, bigliettoId);
-            ResultSet rs = stmt.executeQuery();
-
-            if (rs.next()) {
-                return Optional.of(rs.getString("cliente_email"));
-            }
-
-        } catch (SQLException e) {
-            logger.severe("Errore nel recupero cliente proprietario: " + e.getMessage());
-        }
-
-        return Optional.empty();
     }
 }

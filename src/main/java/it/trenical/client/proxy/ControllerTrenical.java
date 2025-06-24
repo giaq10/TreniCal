@@ -162,6 +162,39 @@ public class ControllerTrenical {
         }
     }
 
+    public RisultatoBiglietti visualizzaBiglietti(String emailUtente) {
+        logger.info("Richiesta visualizzazione biglietti per: " + emailUtente);
+
+        try {
+            if (emailUtente == null || emailUtente.trim().isEmpty()) {
+                return new RisultatoBiglietti(false, "Email utente non specificata", new ArrayList<>());
+            }
+
+            VisualizzaBigliettiRequest request = VisualizzaBigliettiRequest.newBuilder()
+                    .setEmailUtente(emailUtente)
+                    .build();
+
+            VisualizzaBigliettiResponse response = blockingStub.visualizzaBiglietti(request);
+
+            RisultatoBiglietti risultato = new RisultatoBiglietti(
+                    response.getSuccesso(),
+                    response.getMessaggio(),
+                    response.getBigliettiList()
+            );
+
+            logger.info("Visualizzazione biglietti completata: " + risultato.getMessaggio());
+            return risultato;
+
+        } catch (StatusRuntimeException e) {
+            logger.severe("Errore nella chiamata gRPC biglietti: " + e.getStatus());
+            return new RisultatoBiglietti(false, "Errore Server", new ArrayList<>());
+
+        } catch (Exception e) {
+            logger.severe("Errore imprevisto visualizzazione biglietti: " + e.getMessage());
+            return new RisultatoBiglietti(false, "Errore imprevisto: " + e.getMessage(), new ArrayList<>());
+        }
+    }
+
     public static class RisultatoRicerca {
         private final boolean successo;
         private final String messaggio;
@@ -215,5 +248,21 @@ public class ControllerTrenical {
         public String getMessaggio() { return messaggio; }
         public int getBigliettiAcquistati() { return bigliettiAcquistati; }
         public double getPrezzoTotale() { return prezzoTotale; }
+    }
+
+    public static class RisultatoBiglietti {
+        private final boolean successo;
+        private final String messaggio;
+        private final List<BigliettoDTO> biglietti;
+
+        public RisultatoBiglietti(boolean successo, String messaggio, List<BigliettoDTO> biglietti) {
+            this.successo = successo;
+            this.messaggio = messaggio;
+            this.biglietti = biglietti;
+        }
+
+        public boolean isSuccesso() { return successo; }
+        public String getMessaggio() { return messaggio; }
+        public List<BigliettoDTO> getBiglietti() { return biglietti; }
     }
 }
