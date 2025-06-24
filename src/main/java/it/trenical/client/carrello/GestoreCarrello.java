@@ -128,4 +128,8 @@ public class GestoreCarrello {
                 .mapToDouble(CarrelloItem::getPrezzoTotale)
                 .sum();
     }
+
+    public TimerCarrello getTimer(){
+        return timer;
+    }
 }

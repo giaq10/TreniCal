@@ -1,8 +1,11 @@
 package it.trenical.server.grpc;
 
 import io.grpc.stub.StreamObserver;
+import it.trenical.common.cliente.Biglietto;
 import it.trenical.grpc.*;
 import it.trenical.common.stazioni.Stazione;
+import it.trenical.server.db.dao.BigliettoDAO;
+import it.trenical.server.db.dao.ClienteDAO;
 import it.trenical.server.db.dao.ViaggioDAO;
 import it.trenical.server.viaggi.Viaggio;
 
@@ -223,6 +226,116 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
         responseObserver.onCompleted();
 
         logger.warning("Errore carrello: " + messaggio);
+    }
+
+    @Override
+    public void confermaAcquisto(ConfermaAcquistoRequest request,
+                                 StreamObserver<ConfermaAcquistoResponse> responseObserver) {
+        System.out.println("=== DEBUG SERVER ===");
+        System.out.println("Email: " + request.getEmailUtente());
+        System.out.println("Items ricevuti: " + request.getCarrelloItemsCount());
+        System.out.println("Nominativi ricevuti: " + request.getNominativiCount());
+        System.out.println("=== METODO confermaAcquisto CHIAMATO ===");
+        try {
+            String emailUtente = request.getEmailUtente();
+            List<CarrelloItemDTO> carrelloItems = request.getCarrelloItemsList();
+            List<String> nominativi = request.getNominativiList();
+            String modalitaPagamento = request.getModalitaPagamento();
+
+            logger.info("Richiesta conferma acquisto - Utente: " + emailUtente +
+                    ", Items: " + carrelloItems.size() +
+                    ", Nominativi: " + nominativi.size());
+
+            List<Biglietto> bigliettiCreati = new ArrayList<>();
+            double prezzoTotale = 0;
+            int indiceNominativo = 0;
+
+            for (CarrelloItemDTO item : carrelloItems) {
+                Optional<Viaggio> viaggioOpt = viaggioDAO.findById(item.getViaggioId());
+                if (viaggioOpt.isEmpty()) {
+                    inviaRispostaAcquistoErrore(responseObserver, "Viaggio non trovato: " + item.getViaggioId());
+                    return;
+                }
+
+                Viaggio viaggio = viaggioOpt.get();
+
+                Biglietto bigliettoBase = new Biglietto(viaggio);
+                bigliettoBase.setNominativo(nominativi.get(indiceNominativo++));
+                bigliettiCreati.add(bigliettoBase);
+                prezzoTotale += viaggio.getPrezzo();
+
+                for (int i = 1; i < item.getQuantita(); i++) { //prototype
+                    Biglietto clone = bigliettoBase.clone();
+                    clone.setNominativo(nominativi.get(indiceNominativo++));
+                    bigliettiCreati.add(clone);
+                    prezzoTotale += viaggio.getPrezzo();
+                }
+            }
+
+            System.out.println("=== DEBUG SALVATAGGIO ===");
+            System.out.println("Biglietti creati: " + bigliettiCreati.size());
+            for (int i = 0; i < bigliettiCreati.size(); i++) {
+                Biglietto b = bigliettiCreati.get(i);
+                System.out.println("Biglietto " + i + ": " + b.getNominativo() + " - Completo: " + b.isCompleto());
+            }
+            // Debug Foreign Key
+            System.out.println("=== DEBUG FOREIGN KEY ===");
+            System.out.println("Email cliente: " + emailUtente);
+
+            // Verifica se cliente esiste
+            ClienteDAO clienteDAO = new ClienteDAO();
+            boolean clienteEsiste = clienteDAO.exists(emailUtente);
+            System.out.println("Cliente esiste: " + clienteEsiste);
+
+            // Verifica viaggi
+            for (Biglietto b : bigliettiCreati) {
+                System.out.println("Viaggio ID: " + b.getViaggio().getId());
+                boolean viaggioEsiste = viaggioDAO.findById(b.getViaggio().getId()).isPresent();
+                System.out.println("Viaggio esiste: " + viaggioEsiste);
+            }
+
+            BigliettoDAO bigliettoDAO = new BigliettoDAO();
+            int bigliettSalvati = bigliettoDAO.saveAll(bigliettiCreati, emailUtente);
+
+            System.out.println("Biglietti salvati: " + bigliettSalvati + "/" + bigliettiCreati.size());
+
+            if (bigliettSalvati != bigliettiCreati.size()) {
+                inviaRispostaAcquistoErrore(responseObserver, "Errore nel salvataggio biglietti");
+                return;
+            }
+
+            ConfermaAcquistoResponse response = ConfermaAcquistoResponse.newBuilder()
+                    .setSuccesso(true)
+                    .setMessaggio("Acquisto completato " + bigliettSalvati + " biglietti acquistati.")
+                    .setBigliettiAcquistati(bigliettSalvati)
+                    .setPrezzoTotale(prezzoTotale)
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+            logger.info("Acquisto completato " + bigliettSalvati + " biglietti per €" + prezzoTotale);
+
+        } catch (Exception e) {
+            logger.severe("Errore durante conferma acquisto: " + e.getMessage());
+            System.out.println("CRASH nel confermaAcquisto: " + e.getMessage());
+            e.printStackTrace();
+            inviaRispostaAcquistoErrore(responseObserver, "Errore interno del server");
+        }
+    }
+
+    private void inviaRispostaAcquistoErrore(StreamObserver<ConfermaAcquistoResponse> responseObserver, String messaggio) {
+        ConfermaAcquistoResponse errorResponse = ConfermaAcquistoResponse.newBuilder()
+                .setSuccesso(false)
+                .setMessaggio(messaggio)
+                .setBigliettiAcquistati(0)
+                .setPrezzoTotale(0.0)
+                .build();
+
+        responseObserver.onNext(errorResponse);
+        responseObserver.onCompleted();
+
+        logger.warning("Errore acquisto: " + messaggio);
     }
 
 }

@@ -5,6 +5,7 @@ import it.trenical.client.carrello.GestoreCarrello;
 import it.trenical.client.command.AggiungiCarrelloCommand;
 import it.trenical.client.command.CercaViaggiCommand;
 import it.trenical.client.command.Command;
+import it.trenical.client.command.ConfermaAcquistoCommand;
 import it.trenical.client.proxy.ControllerTrenical;
 import it.trenical.grpc.ViaggioDTO;
 import it.trenical.common.stazioni.Stazione;
@@ -19,6 +20,7 @@ import javafx.stage.*;
 
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ClientApp extends Application {
@@ -395,7 +397,7 @@ public class ClientApp extends Application {
 
         mainLayout.getChildren().addAll(titoloDettaglio, infoBox, acquistaBox);
 
-        Scene dettaglioScene = new Scene(new ScrollPane(mainLayout), 500, 600);
+        Scene dettaglioScene = new Scene(new ScrollPane(mainLayout), 340, 600);
         dettaglioStage.setScene(dettaglioScene);
         dettaglioStage.setResizable(false);
         dettaglioStage.show();
@@ -458,7 +460,6 @@ public class ClientApp extends Application {
 
         aggiornaContenutoCarrello();
     }
-
 
     private void aggiornaContenutoCarrello() {
         GestoreCarrello carrello = GestoreCarrello.getInstance();
@@ -542,16 +543,144 @@ public class ClientApp extends Application {
 
             Button acquistaBtn = new Button("Acquista Tutto");
             acquistaBtn.setStyle("-fx-background-color: green; -fx-text-fill: white;");
-            acquistaBtn.setOnAction(e -> {
-
-                mostraSuccesso("Acquisto", "Funzionalità di acquisto non ancora implementata");
-            });
+            acquistaBtn.setOnAction(e -> resocontoAcquisto());
 
             azioniBox.getChildren().addAll(svuotaBtn, acquistaBtn);
             carrelloBox.getChildren().add(azioniBox);
 
             layoutCarrello.getChildren().add(carrelloBox);
         }
+    }
+
+    private void resocontoAcquisto() {
+        GestoreCarrello carrello = GestoreCarrello.getInstance();
+        List<CarrelloItem> items = carrello.getCarrelloItems();
+        int totaleBiglietti = carrello.getTotaleBiglietti();
+
+        Stage resocontoStage = new Stage();
+        resocontoStage.setTitle("Conferma Acquisto - " + totaleBiglietti + " biglietti");
+
+        VBox mainLayout = new VBox(15);
+        mainLayout.setPadding(new Insets(20));
+        mainLayout.setStyle("-fx-background-color: white;");
+
+        Label titleLabel = new Label("Inserisci i nominativi per i biglietti");
+        titleLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+
+        VBox infoBox = new VBox(5);
+        infoBox.setStyle("-fx-background-color: lightgray; -fx-padding: 10; -fx-background-radius: 5;");
+
+        for (CarrelloItem item : items) {
+            Label infoLabel = new Label(String.format("%dx %s-%s %s (€%.2f )",
+                    item.getQuantita(),
+                    item.getViaggio().getStazionePartenza(),
+                    item.getViaggio().getStazioneArrivo(),
+                    item.getViaggio().getDataPartenza(),
+                    item.getPrezzo()));
+            infoLabel.setStyle("-fx-font-size: 12px;");
+            infoBox.getChildren().add(infoLabel);
+        }
+
+        Label totaleLabel = new Label("Totale: €" + String.format("%.2f", carrello.getPrezzoTotale()));
+        totaleLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: green;");
+        infoBox.getChildren().add(totaleLabel);
+
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setPrefHeight(200);
+        scrollPane.setFitToWidth(true);
+
+        VBox nominativiBox = new VBox(10);
+        List<TextField> textFields = new ArrayList<>();
+
+        int bigliettoNum = 1;
+        for (CarrelloItem item : items) {
+            for (int i = 0; i < item.getQuantita(); i++) {
+                HBox bigliettoRow = new HBox(10);
+                bigliettoRow.setAlignment(Pos.CENTER_LEFT);
+
+                Label numeroLabel = new Label("Biglietto " + bigliettoNum + ":");
+                numeroLabel.setPrefWidth(80);
+                numeroLabel.setStyle("-fx-font-weight: bold;");
+
+                Label viaggioLabel = new Label(item.getViaggio().getStazionePartenza() +
+                        " -> " + item.getViaggio().getStazioneArrivo());
+                viaggioLabel.setPrefWidth(150);
+                viaggioLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: gray;");
+
+                TextField nominativoField = new TextField();
+                nominativoField.setPromptText("Inserisci nominativo...");
+                nominativoField.setPrefWidth(200);
+                textFields.add(nominativoField);
+
+                bigliettoRow.getChildren().addAll(numeroLabel, viaggioLabel, nominativoField);
+                nominativiBox.getChildren().add(bigliettoRow);
+                bigliettoNum++;
+            }
+        }
+
+        scrollPane.setContent(nominativiBox);
+
+        HBox pagamentoBox = new HBox(10);
+        pagamentoBox.setAlignment(Pos.CENTER_LEFT);
+
+        Label pagamentoLabel = new Label("Modalità di pagamento:");
+        pagamentoLabel.setStyle("-fx-font-weight: bold;");
+
+        ComboBox<String> pagamentoCombo = new ComboBox<>();
+        pagamentoCombo.getItems().addAll("Carta di Credito", "Wallet", "Bonifico Bancario");
+        pagamentoCombo.setValue("Carta di Credito");
+        pagamentoCombo.setPrefWidth(150);
+
+        pagamentoBox.getChildren().addAll(pagamentoLabel, pagamentoCombo);
+
+        HBox buttonsBox = new HBox(10);
+        buttonsBox.setAlignment(Pos.CENTER);
+
+        Button annullaBtn = new Button("Annulla");
+        annullaBtn.setStyle("-fx-background-color: red; -fx-text-fill: white; -fx-pref-width: 100;");
+        annullaBtn.setOnAction(e -> resocontoStage.close());
+
+        Button confermaBtn = new Button("Conferma Acquisto");
+        confermaBtn.setStyle("-fx-background-color: green; -fx-text-fill: white; -fx-pref-width: 150;");
+        confermaBtn.setOnAction(e -> {
+            List<String> nominativi = new ArrayList<>();
+            boolean tuttiValidi = true;
+
+            for (TextField field : textFields) {
+                String nominativo = field.getText().trim();
+                if (nominativo.isEmpty()) {
+                    field.setStyle("-fx-border-color: red;");
+                    tuttiValidi = false;
+                } else {
+                    nominativi.add(nominativo);
+                }
+            }
+            if (!tuttiValidi) {
+                mostraErrore("Errore", "Inserisci tutti i nominativi richiesti");
+                return;
+            }
+            ConfermaAcquistoCommand command = new ConfermaAcquistoCommand(
+                    controllerTrenical,
+                    this,
+                    items,
+                    nominativi,
+                    pagamentoCombo.getValue(),
+                    emailUtente
+            );
+
+            command.execute();
+            resocontoStage.close();
+        });
+
+        buttonsBox.getChildren().addAll(annullaBtn, confermaBtn);
+
+        mainLayout.getChildren().addAll(titleLabel, infoBox,
+                new Label("Nominativi:"), scrollPane,
+                pagamentoBox, buttonsBox);
+
+        Scene scene = new Scene(mainLayout, 500, 500);
+        resocontoStage.setScene(scene);
+        resocontoStage.showAndWait();
     }
 
     private VBox creaTabProfilo() {

@@ -303,9 +303,9 @@ public class ServerAdminApp extends Application {
             }
 
             int viaggiTratta = viaggiPerTratta.getValue();
-
+            int stazioni = Stazione.getTutteLeStazioni().size();
             long giorni = ChronoUnit.DAYS.between(inizio, fine) + 1;
-            long viaggiTotali = 132 * viaggiTratta * giorni;
+            long viaggiTotali =  stazioni*(stazioni-1)* viaggiTratta * giorni;
 
             Alert conferma = new Alert(Alert.AlertType.CONFIRMATION);
             conferma.setTitle("Conferma Generazione");

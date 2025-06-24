@@ -7,11 +7,12 @@ import java.time.LocalTime;
 
 public class TimerCarrello {
 
-    private final int TEMPO = 60;
-    private final int AVVISO = 10;
+    private final int TEMPO = 120;
+    private final int AVVISO = 30;
 
     private Label timerLabel = new Label();
     private boolean avvisoStampato = false;
+    private boolean terminato = false;
     private AnimationTimer timer;
 
     public TimerCarrello() {
@@ -45,6 +46,7 @@ public class TimerCarrello {
                     }
                 } else {
                     System.out.println("Timer carrello terminato");
+                    terminato = true;
                     stop();
                     GestoreCarrello.getInstance().svuotaCarrello();
                 }
@@ -65,5 +67,7 @@ public class TimerCarrello {
             timer = null;
         }
     }
+
+    public boolean isTerminato() {return terminato;}
 
 }

@@ -9,6 +9,7 @@ option java_outer_classname = "TrenicalProto";
 service TrenicalService {
   rpc CercaViaggi(RicercaViaggioRequest) returns (RicercaViaggioResponse);
   rpc AggiungiAlCarrello(AggiungiCarrelloRequest) returns (AggiungiCarrelloResponse);
+  rpc ConfermaAcquisto(ConfermaAcquistoRequest) returns (ConfermaAcquistoResponse);
 }
 
 message RicercaViaggioRequest {
@@ -62,4 +63,30 @@ message BigliettoCarrelloDTO {
   string info_viaggio = 4;
   ViaggioDTO viaggio = 5;
   int32 quantita = 6;
+}
+
+message CarrelloItemDTO {
+  string viaggio_id = 1;
+  int32 quantita = 2;
+  double prezzo = 3;
+}
+
+message ConfermaAcquistoRequest {
+  string email_utente = 1;
+  repeated CarrelloItemDTO carrello_items = 2;
+  repeated string nominativi = 3;
+  string modalita_pagamento = 4;
+}
+
+message AcquistoBiglietto {
+  string viaggio_id = 1;
+  string nominativo = 2;
+  double prezzo = 3;
+}
+
+message ConfermaAcquistoResponse {
+  bool successo = 1;
+  string messaggio = 2;
+  int32 biglietti_acquistati = 3;
+  double prezzo_totale = 4;
 }

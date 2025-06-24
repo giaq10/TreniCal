@@ -114,6 +114,54 @@ public class ControllerTrenical {
         }
     }
 
+    public RisultatoAcquisto confermaAcquisto(List<CarrelloItem> carrelloItems,
+                                              List<String> nominativi,
+                                              String modalitaPagamento,
+                                              String emailUtente) {
+        logger.info("Conferma acquisto: " + carrelloItems.size() + " items, " + nominativi.size() + " nominativi");
+        System.out.println("=== DEBUG CONTROLLER ===");
+        System.out.println("Items: " + carrelloItems.size());
+        System.out.println("Nominativi: " + nominativi.size());
+        try {
+            List<CarrelloItemDTO> itemsDTO = new ArrayList<>();
+            for (CarrelloItem item : carrelloItems) {
+                CarrelloItemDTO dto = CarrelloItemDTO.newBuilder()
+                        .setViaggioId(item.getViaggioId())
+                        .setQuantita(item.getQuantita())
+                        .setPrezzo(item.getPrezzo())
+                        .build();
+                itemsDTO.add(dto);
+            }
+
+            ConfermaAcquistoRequest request = ConfermaAcquistoRequest.newBuilder()
+                    .setEmailUtente(emailUtente)
+                    .addAllCarrelloItems(itemsDTO)
+                    .addAllNominativi(nominativi)
+                    .setModalitaPagamento(modalitaPagamento)
+                    .build();
+
+            System.out.println("Invio richiesta al server...");
+            ConfermaAcquistoResponse response = blockingStub.confermaAcquisto(request);
+
+            System.out.println("Risposta server:");
+            System.out.println("- Successo: " + response.getSuccesso());
+            System.out.println("- Messaggio: " + response.getMessaggio());
+
+            return new RisultatoAcquisto(
+                    response.getSuccesso(),
+                    response.getMessaggio(),
+                    response.getBigliettiAcquistati(),
+                    response.getPrezzoTotale()
+            );
+
+        } catch (Exception e) {
+            logger.severe("Errore conferma acquisto: " + e.getMessage());
+            System.out.println("ERRORE CONTROLLER: " + e.getMessage());
+            e.printStackTrace();
+            return new RisultatoAcquisto(false, "Errore: " + e.getMessage(), 0, 0.0);
+        }
+    }
+
     public static class RisultatoRicerca {
         private final boolean successo;
         private final String messaggio;
@@ -148,5 +196,24 @@ public class ControllerTrenical {
         public String getMessaggio() { return messaggio; }
         public int getPostiRimanenti() { return postiRimanenti; }
         public List<CarrelloItem> getCarrelloItems() { return carrelloItems; }  // Nuovo nome
+    }
+
+    public static class RisultatoAcquisto {
+        private final boolean successo;
+        private final String messaggio;
+        private final int bigliettiAcquistati;
+        private final double prezzoTotale;
+
+        public RisultatoAcquisto(boolean successo, String messaggio, int biglietti, double prezzo) {
+            this.successo = successo;
+            this.messaggio = messaggio;
+            this.bigliettiAcquistati = biglietti;
+            this.prezzoTotale = prezzo;
+        }
+
+        public boolean isSuccesso() { return successo; }
+        public String getMessaggio() { return messaggio; }
+        public int getBigliettiAcquistati() { return bigliettiAcquistati; }
+        public double getPrezzoTotale() { return prezzoTotale; }
     }
 }
