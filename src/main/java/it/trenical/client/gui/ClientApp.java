@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class ClientApp extends Application {
 
@@ -490,50 +491,171 @@ public class ClientApp extends Application {
         infoBox.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8;");
 
         Label infoBiglietto = new Label(String.format(
-                        "Nominativo: %s\n" +
-                        "Tratta: %s -> %s\n" +
-                        "Partenza: %s\n" +
-                        "Orario: %s - %s\n" +
-                        "Tipo Treno: %s\n" +
-                        "Binario: %s\n" +
-                        "Durata: %s\n" +
-                        "Prezzo: €%.2f",
-                        biglietto.getNominativo(),
-                        biglietto.getStazionePartenza(),
-                        biglietto.getStazioneArrivo(),
-                        biglietto.getDataViaggio(),
-                        biglietto.getOrarioPartenza(),
-                        biglietto.getOrarioArrivo(),
-                        biglietto.getTipoTreno(),
-                        biglietto.getBinario(),
-                        biglietto.getDurataFormattata(),
-                        biglietto.getPrezzo()
+                "Nominativo: %s\n" +
+                "Tratta: %s -> %s\n" +
+                "Partenza: %s\n" +
+                "Orario: %s - %s\n" +
+                "Tipo Treno: %s\n" +
+                "Binario: %s\n" +
+                "Durata: %s\n" +
+                "Prezzo: €%.2f",
+                biglietto.getNominativo(),
+                biglietto.getStazionePartenza(),
+                biglietto.getStazioneArrivo(),
+                biglietto.getDataViaggio(),
+                biglietto.getOrarioPartenza(),
+                biglietto.getOrarioArrivo(),
+                biglietto.getTipoTreno(),
+                biglietto.getBinario(),
+                biglietto.getDurataFormattata(),
+                biglietto.getPrezzo()
         ));
 
         infoBiglietto.setStyle("-fx-font-size: 12px; -fx-font-family: 'bold'; -fx-text-fill: black;");
         infoBox.getChildren().add(infoBiglietto);
 
+        VBox modificaBox = new VBox(10);
+        modificaBox.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8;");
+
+        Label modificaLabel = new Label("Modifica Biglietto");
+        modificaLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: black;");
+
+        HBox bottoniModificaBox = new HBox(10);
+        bottoniModificaBox.setAlignment(Pos.CENTER);
+
+        Button modificaClasseBtn = new Button("Modifica Classe");
+        modificaClasseBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white; ");
+        modificaClasseBtn.setOnAction(e -> {
+            Command modificaClasseCommand = new ModificaClasseCommand(controllerTrenical, this, biglietto, emailUtente);
+            modificaClasseCommand.execute();
+            dettaglioStage.close();
+        });
+
+        Button modificaOrarioBtn = new Button("Modifica Orario");
+        modificaOrarioBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
+        modificaOrarioBtn.setOnAction(e -> {
+            Command modificaOrarioCommand = new ModificaOrarioCommand(controllerTrenical, this, biglietto, emailUtente);
+            modificaOrarioCommand.execute();
+            dettaglioStage.close();
+        });
+
+        Button modificaDataBtn = new Button("Modifica Data");
+        modificaDataBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
+        modificaDataBtn.setOnAction(e -> {
+            Command modificaDataCommand = new ModificaDataCommand(controllerTrenical, this, biglietto, emailUtente);
+            modificaDataCommand.execute();
+            dettaglioStage.close();
+        });
+
+        bottoniModificaBox.getChildren().addAll(modificaClasseBtn, modificaOrarioBtn, modificaDataBtn);
+        modificaBox.getChildren().addAll(modificaLabel, bottoniModificaBox);
+
         HBox azioniBox = new HBox(10);
         azioniBox.setAlignment(Pos.CENTER);
-
-        Button modificaBtn = new Button("Modifica Biglietto");
-        modificaBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
-        modificaBtn.setOnAction(e -> {
-
-        });
 
         Button chiudiBtn = new Button("Chiudi");
         chiudiBtn.setStyle("-fx-background-color: red; -fx-text-fill: white;");
         chiudiBtn.setOnAction(e -> dettaglioStage.close());
 
-        azioniBox.getChildren().addAll(modificaBtn, chiudiBtn);
+        azioniBox.getChildren().add(chiudiBtn);
 
-        mainLayout.getChildren().addAll(titolo, infoBox, azioniBox);
+        mainLayout.getChildren().addAll(titolo, infoBox, modificaBox, azioniBox);
 
         Scene dettaglioScene = new Scene(new ScrollPane(mainLayout));
         dettaglioStage.setScene(dettaglioScene);
         dettaglioStage.setResizable(false);
         dettaglioStage.show();
+    }
+
+    public void mostraSelezionaNuovoViaggio(List<ViaggioDTO> viaggiDisponibili,
+                                            BigliettoDTO bigliettoCorrente,
+                                            String emailUtente,
+                                            String titolo) {
+        Stage selezioneStage = new Stage();
+        selezioneStage.setTitle(titolo);
+
+        VBox mainLayout = new VBox(15);
+        mainLayout.setPadding(new Insets(20));
+        mainLayout.setStyle("-fx-background-color: white;");
+
+        Label titoloLabel = new Label("Seleziona il nuovo viaggio");
+        titoloLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: black;");
+
+        ListView<ViaggioDTO> viaggiListView = new ListView<>();
+        viaggiListView.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 14px; -fx-font-weight: bold;");
+
+        viaggiListView.setCellFactory(listView -> new ListCell<ViaggioDTO>() {
+            @Override
+            protected void updateItem(ViaggioDTO viaggio, boolean empty) {
+                super.updateItem(viaggio, empty);
+
+                if (empty || viaggio == null) {
+                    setText(null);
+                } else {
+                    String testoViaggio = String.format(
+                            "%s %s | %s-%s | Partenza: %s | Arrivo: %s | €%.2f | Posti: %d",
+                            viaggio.getTipoTreno(),
+                            viaggio.getCodiceTreno(),
+                            viaggio.getStazionePartenza(),
+                            viaggio.getStazioneArrivo(),
+                            viaggio.getOrarioPartenza(),
+                            viaggio.getOrarioArrivo(),
+                            viaggio.getPrezzo(),
+                            viaggio.getPostiDisponibili()
+                    );
+                    setText(testoViaggio);
+                }
+            }
+        });
+
+        viaggiListView.getItems().addAll(viaggiDisponibili);
+        viaggiListView.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                ViaggioDTO viaggioSelezionato = viaggiListView.getSelectionModel().getSelectedItem();
+                if (viaggioSelezionato != null) {
+                    selezioneStage.close();
+                    confermaEEseguiModifica(bigliettoCorrente, viaggioSelezionato, emailUtente);
+                }
+            }
+        });
+
+        mainLayout.getChildren().addAll(titoloLabel, viaggiListView);
+
+        Scene selezioneScene = new Scene(mainLayout, 650, 400);
+        selezioneStage.setScene(selezioneScene);
+        selezioneStage.show();
+    }
+
+    public void confermaEEseguiModifica(BigliettoDTO bigliettoCorrente, ViaggioDTO nuovoViaggio,
+                                        String emailUtente) {
+        try {
+            double differenza = nuovoViaggio.getPrezzo() - bigliettoCorrente.getPrezzo();
+            String messaggio;
+            if(differenza > 0) {
+                messaggio = String.format("Penale da pagare: €%.2f \n" +
+                        "Confermi la modifica?", differenza);
+            }
+            else {
+                messaggio = String.format("Differenza di: €%.2f.\n " +
+                        "Non verrà effettuato nessun rimborso. Confermi la modifica?", differenza * -1);
+            }
+
+            Alert conferma = new Alert(Alert.AlertType.CONFIRMATION);
+            conferma.setTitle("Conferma Modifica Biglietto");
+            conferma.setContentText(messaggio);
+
+            Optional<ButtonType> risultato = conferma.showAndWait();
+
+            if (risultato.isPresent() && risultato.get() == ButtonType.OK) {
+                Command eseguiModificaCommand = new ModificaBigliettoCommand(
+                        controllerTrenical, this, bigliettoCorrente.getId(), nuovoViaggio.getId(), emailUtente
+                );
+                eseguiModificaCommand.execute();
+            }
+
+        } catch (Exception e) {
+            mostraErrore("Errore", "Errore nella conferma modifica: " + e.getMessage());
+        }
     }
 
     public ListView<BigliettoDTO> getBigliettiListView() {

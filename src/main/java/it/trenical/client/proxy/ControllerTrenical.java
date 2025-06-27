@@ -195,6 +195,48 @@ public class ControllerTrenical {
         }
     }
 
+    public RisultatoModificaBiglietto modificaBiglietto(String idBiglietto, String nuovoIdViaggio, String emailUtente) {
+        logger.info("Modifica biglietto: " + idBiglietto + " -> nuovo viaggio: " + nuovoIdViaggio);
+
+        try {
+            ModificaBigliettoRequest request = ModificaBigliettoRequest.newBuilder()
+                    .setIdBiglietto(idBiglietto)
+                    .setNuovoIdViaggio(nuovoIdViaggio)
+                    .setEmailUtente(emailUtente)
+                    .build();
+
+            ModificaBigliettoResponse response = blockingStub.modificaBiglietto(request);
+
+            RisultatoModificaBiglietto risultato = new RisultatoModificaBiglietto(
+                    response.getSuccesso(),
+                    response.getMessaggio(),
+                    response.getDifferenzaPrezzo(),
+                    response.getPrezzoPrecedente(),
+                    response.getPrezzoNuovo(),
+                    response.hasBigliettoAggiornato() ? response.getBigliettoAggiornato() : null
+            );
+
+            if (risultato.isSuccesso()) {
+                logger.info("Modifica biglietto completata: " + risultato.getMessaggio());
+            } else {
+                logger.warning("Modifica biglietto fallita: " + risultato.getMessaggio());
+            }
+
+            return risultato;
+
+        } catch (StatusRuntimeException e) {
+            logger.severe("Errore chiamata gRPC modifica biglietto: " + e.getStatus());
+            String messaggio = "Errore di connessione al server";
+            return new RisultatoModificaBiglietto(false, messaggio, 0.0, 0.0, 0.0, null);
+
+        } catch (Exception e) {
+            logger.severe("Errore imprevisto modifica biglietto: " + e.getMessage());
+            e.printStackTrace();
+            return new RisultatoModificaBiglietto(false,
+                    "Errore imprevisto: " + e.getMessage(), 0.0, 0.0, 0.0, null);
+        }
+    }
+
     public static class RisultatoRicerca {
         private final boolean successo;
         private final String messaggio;
@@ -264,5 +306,32 @@ public class ControllerTrenical {
         public boolean isSuccesso() { return successo; }
         public String getMessaggio() { return messaggio; }
         public List<BigliettoDTO> getBiglietti() { return biglietti; }
+    }
+
+    public static class RisultatoModificaBiglietto {
+        private final boolean successo;
+        private final String messaggio;
+        private final double differenzaPrezzo;
+        private final double prezzoPrecedente;
+        private final double prezzoNuovo;
+        private final BigliettoDTO bigliettoAggiornato;
+
+        public RisultatoModificaBiglietto(boolean successo, String messaggio,
+                                          double differenzaPrezzo, double prezzoPrecedente,
+                                          double prezzoNuovo, BigliettoDTO bigliettoAggiornato) {
+            this.successo = successo;
+            this.messaggio = messaggio;
+            this.differenzaPrezzo = differenzaPrezzo;
+            this.prezzoPrecedente = prezzoPrecedente;
+            this.prezzoNuovo = prezzoNuovo;
+            this.bigliettoAggiornato = bigliettoAggiornato;
+        }
+
+        public boolean isSuccesso() { return successo; }
+        public String getMessaggio() { return messaggio; }
+        public String getDettaglioPrezzo() {
+            return String.format("Prezzo precedente: €%.2f\nPrezzo nuovo: €%.2f",
+                    prezzoPrecedente, prezzoNuovo);
+        }
     }
 }

@@ -183,4 +183,30 @@ public class BigliettoDAO {
 
         return false;
     }
+
+    public boolean updateViaggioId(String bigliettoId, String nuovoViaggioId) {
+        String sql = "UPDATE biglietti SET viaggio_id = ? WHERE id = ?";
+
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, nuovoViaggioId);
+            stmt.setString(2, bigliettoId);
+
+            int rowsAffected = stmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                logger.info("Biglietto aggiornato: " + bigliettoId + " -> nuovo viaggio: " + nuovoViaggioId);
+                return true;
+            } else {
+                logger.warning("Nessun biglietto trovato con ID: " + bigliettoId);
+                return false;
+            }
+
+        } catch (SQLException e) {
+            logger.severe("Errore nell'aggiornamento biglietto: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

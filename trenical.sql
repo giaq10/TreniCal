@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS clienti (
     email VARCHAR(255) PRIMARY KEY,
     password VARCHAR(255) NOT NULL,
     nome VARCHAR(255) NOT NULL,
-    abbonamento_fedelta BOOLEAN DEFAULT 0
+    abbonamento_fedelta BOOLEAN DEFAULT 0,
+    notifiche_promozioni BOOLEAN DEFAULT 0
 );
 
 -- TABELLA VIAGGI
@@ -47,6 +48,7 @@ CREATE TABLE IF NOT EXISTS biglietti (
     viaggio_id VARCHAR(255) NOT NULL,
     nominativo VARCHAR(255) NOT NULL,
     data_acquisto DATETIME DEFAULT CURRENT_TIMESTAMP,
+	prezzo DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (cliente_email) REFERENCES clienti(email) ON DELETE CASCADE,
     FOREIGN KEY (viaggio_id) REFERENCES viaggi(id) ON DELETE CASCADE
 );
@@ -55,8 +57,4 @@ CREATE INDEX IF NOT EXISTS idx_viaggi_data ON viaggi(data_viaggio);
 CREATE INDEX IF NOT EXISTS idx_viaggi_stazioni ON viaggi(stazione_partenza, stazione_arrivo);
 CREATE INDEX IF NOT EXISTS idx_biglietti_cliente ON biglietti(cliente_email);
 CREATE INDEX IF NOT EXISTS idx_biglietti_viaggio ON biglietti(viaggio_id);
-
-SELECT 'RESET COMPLETATO!' as messaggio;
-SELECT COUNT(*) as clienti_inseriti FROM clienti;
-SELECT COUNT(*) as viaggi_inseriti FROM viaggi;
-SELECT COUNT(*) as promozioni_inserite FROM promozioni;
+CREATE INDEX IF NOT EXISTS idx_clienti_notifiche_fedelta ON clienti(abbonamento_fedelta, notifiche_promozioni);

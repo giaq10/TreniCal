@@ -416,4 +416,129 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
         logger.warning("Errore visualizzazione biglietti: " + messaggio);
     }
 
+    @Override
+    public void modificaBiglietto(ModificaBigliettoRequest request,
+                                  StreamObserver<ModificaBigliettoResponse> responseObserver) {
+
+        logger.info("Richiesta modifica biglietto: " + request.getIdBiglietto() +
+                " -> nuovo viaggio: " + request.getNuovoIdViaggio());
+
+        try {
+            BigliettoDAO bigliettoDAO = new BigliettoDAO();
+            ClienteDAO clienteDAO = new ClienteDAO();
+            if (!clienteDAO.exists(request.getEmailUtente())) {
+                inviaRispostaModificaErrore(responseObserver, "Cliente non trovato");
+                return;
+            }
+
+            List<Biglietto> bigliettiCliente = bigliettoDAO.findByClienteEmail(request.getEmailUtente());
+            Biglietto bigliettoCorrente = null;
+
+            for (Biglietto biglietto : bigliettiCliente) {
+                if (biglietto.getId().equals(request.getIdBiglietto())) {
+                    bigliettoCorrente = biglietto;
+                    break;
+                }
+            }
+
+            if (bigliettoCorrente == null) {
+                inviaRispostaModificaErrore(responseObserver, "Biglietto non trovato o non appartiene al cliente");
+                return;
+            }
+
+            Optional<Viaggio> nuovoViaggioOpt = viaggioDAO.findById(request.getNuovoIdViaggio());
+            if (!nuovoViaggioOpt.isPresent()) {
+                inviaRispostaModificaErrore(responseObserver, "Nuovo viaggio non trovato");
+                return;
+            }
+
+            Viaggio nuovoViaggio = nuovoViaggioOpt.get();
+            if (!nuovoViaggio.isDisponibile() || nuovoViaggio.getPostiDisponibili() <= 0) {
+                inviaRispostaModificaErrore(responseObserver,
+                        "Il viaggio selezionato non è più disponibile");
+                return;
+            }
+
+            String vecchioViaggioId = bigliettoCorrente.getIdViaggio();
+            Optional<Viaggio> vecchioViaggioOpt = viaggioDAO.findById(vecchioViaggioId);
+            if (vecchioViaggioOpt.isPresent()) {
+                Viaggio vecchioViaggio = vecchioViaggioOpt.get();
+                int nuoviPostiVecchio = vecchioViaggio.getPostiDisponibili() + 1;
+                viaggioDAO.updatePostiDisponibili(vecchioViaggioId, nuoviPostiVecchio);
+                logger.info("Liberato posto nel viaggio precedente: " + vecchioViaggioId);
+            }
+
+            int nuoviPostiNuovo = nuovoViaggio.getPostiDisponibili() - 1;
+            boolean postiAggiornati = viaggioDAO.updatePostiDisponibili(request.getNuovoIdViaggio(), nuoviPostiNuovo);
+
+            if (!postiAggiornati) {
+                if (vecchioViaggioOpt.isPresent()) {
+                    Viaggio vecchioViaggio = vecchioViaggioOpt.get();
+                    int ripristinaPostiVecchio = vecchioViaggio.getPostiDisponibili();
+                    viaggioDAO.updatePostiDisponibili(vecchioViaggioId, ripristinaPostiVecchio);
+                }
+                inviaRispostaModificaErrore(responseObserver, "Errore nell'aggiornamento posti disponibili");
+                return;
+            }
+
+            boolean bigliettoAggiornato = bigliettoDAO.updateViaggioId(request.getIdBiglietto(), request.getNuovoIdViaggio());
+
+            if (!bigliettoAggiornato) {
+                viaggioDAO.updatePostiDisponibili(request.getNuovoIdViaggio(), nuovoViaggio.getPostiDisponibili());
+                if (vecchioViaggioOpt.isPresent()) {
+                    Viaggio vecchioViaggio = vecchioViaggioOpt.get();
+                    viaggioDAO.updatePostiDisponibili(vecchioViaggioId, vecchioViaggio.getPostiDisponibili());
+                }
+                inviaRispostaModificaErrore(responseObserver, "Errore nell'aggiornamento del biglietto");
+                return;
+            }
+
+            double prezzoPrecedente = bigliettoCorrente.getPrezzo();
+            double prezzoNuovo = nuovoViaggio.getPrezzo();
+            double differenzaPrezzo = prezzoNuovo - prezzoPrecedente;
+
+            Biglietto bigliettoModificato = new Biglietto(nuovoViaggio,
+                    bigliettoCorrente.getId(),
+                    bigliettoCorrente.getNominativo(),
+                    bigliettoCorrente.getDataAcquisto());
+
+            BigliettoDTO bigliettoDTO = convertiBigliettoADTO(bigliettoModificato);
+
+            ModificaBigliettoResponse response = ModificaBigliettoResponse.newBuilder()
+                    .setSuccesso(true)
+                    .setMessaggio("Biglietto modificato con successo.")
+                    .setDifferenzaPrezzo(differenzaPrezzo)
+                    .setPrezzoPrecedente(prezzoPrecedente)
+                    .setPrezzoNuovo(prezzoNuovo)
+                    .setBigliettoAggiornato(bigliettoDTO)
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+            logger.info("Modifica biglietto completata con successo: " + request.getIdBiglietto());
+
+        } catch (Exception e) {
+            logger.severe("Errore nella modifica biglietto: " + e.getMessage());
+            e.printStackTrace();
+            inviaRispostaModificaErrore(responseObserver,
+                    "Errore interno del server durante la modifica del biglietto");
+        }
+    }
+
+    private void inviaRispostaModificaErrore(StreamObserver<ModificaBigliettoResponse> responseObserver,
+                                             String messaggio) {
+        ModificaBigliettoResponse response = ModificaBigliettoResponse.newBuilder()
+                .setSuccesso(false)
+                .setMessaggio(messaggio)
+                .setDifferenzaPrezzo(0.0)
+                .setPrezzoPrecedente(0.0)
+                .setPrezzoNuovo(0.0)
+                .build();
+
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+
+        logger.warning("Errore modifica biglietto: " + messaggio);
+    }
 }

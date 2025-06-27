@@ -11,6 +11,7 @@ service TrenicalService {
   rpc AggiungiAlCarrello(AggiungiCarrelloRequest) returns (AggiungiCarrelloResponse);
   rpc ConfermaAcquisto(ConfermaAcquistoRequest) returns (ConfermaAcquistoResponse);
   rpc VisualizzaBiglietti(VisualizzaBigliettiRequest) returns (VisualizzaBigliettiResponse);
+  rpc ModificaBiglietto(ModificaBigliettoRequest) returns (ModificaBigliettoResponse);
 }
 
 message RicercaViaggioRequest {
@@ -116,4 +117,19 @@ message BigliettoDTO {
   string tipo_treno = 11;
   string binario = 13;
   string durata_formattata = 14;
+}
+
+message ModificaBigliettoRequest {
+  string id_biglietto = 1;
+  string nuovo_id_viaggio = 2;
+  string email_utente = 3;
+}
+
+message ModificaBigliettoResponse {
+  bool successo = 1;
+  string messaggio = 2;
+  double differenza_prezzo = 3;
+  double prezzo_precedente = 4;
+  double prezzo_nuovo = 5;
+  BigliettoDTO biglietto_aggiornato = 6;
 }
