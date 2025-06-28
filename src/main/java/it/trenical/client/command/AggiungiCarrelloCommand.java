@@ -31,9 +31,8 @@ public class AggiungiCarrelloCommand implements Command {
             if (risultato.isSuccesso()) {
                 System.out.println("Server: " + risultato.getMessaggio());
 
-                // Aggiungi i CarrelloItem al GestoreCarrello
                 for (CarrelloItem item : risultato.getCarrelloItems()) {
-                    GestoreCarrello.getInstance().aggiungiItem(item);
+                    GestoreCarrello.getInstance().aggiungiItem(item, clientApp, emailUtente);
                 }
 
                 String messaggio = String.format(

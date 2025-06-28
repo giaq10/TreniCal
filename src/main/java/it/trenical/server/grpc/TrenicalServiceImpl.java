@@ -231,20 +231,11 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
     @Override
     public void confermaAcquisto(ConfermaAcquistoRequest request,
                                  StreamObserver<ConfermaAcquistoResponse> responseObserver) {
-        System.out.println("=== DEBUG SERVER ===");
-        System.out.println("Email: " + request.getEmailUtente());
-        System.out.println("Items ricevuti: " + request.getCarrelloItemsCount());
-        System.out.println("Nominativi ricevuti: " + request.getNominativiCount());
-        System.out.println("=== METODO confermaAcquisto CHIAMATO ===");
         try {
             String emailUtente = request.getEmailUtente();
             List<CarrelloItemDTO> carrelloItems = request.getCarrelloItemsList();
             List<String> nominativi = request.getNominativiList();
             String modalitaPagamento = request.getModalitaPagamento();
-
-            logger.info("Richiesta conferma acquisto - Utente: " + emailUtente +
-                    ", Items: " + carrelloItems.size() +
-                    ", Nominativi: " + nominativi.size());
 
             List<Biglietto> bigliettiCreati = new ArrayList<>();
             double prezzoTotale = 0;
@@ -272,32 +263,8 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
                 }
             }
 
-            System.out.println("=== DEBUG SALVATAGGIO ===");
-            System.out.println("Biglietti creati: " + bigliettiCreati.size());
-            for (int i = 0; i < bigliettiCreati.size(); i++) {
-                Biglietto b = bigliettiCreati.get(i);
-                System.out.println("Biglietto " + i + ": " + b.getNominativo() + " - Completo: " + b.isCompleto());
-            }
-            // Debug Foreign Key
-            System.out.println("=== DEBUG FOREIGN KEY ===");
-            System.out.println("Email cliente: " + emailUtente);
-
-            // Verifica se cliente esiste
-            ClienteDAO clienteDAO = new ClienteDAO();
-            boolean clienteEsiste = clienteDAO.exists(emailUtente);
-            System.out.println("Cliente esiste: " + clienteEsiste);
-
-            // Verifica viaggi
-            for (Biglietto b : bigliettiCreati) {
-                System.out.println("Viaggio ID: " + b.getViaggio().getId());
-                boolean viaggioEsiste = viaggioDAO.findById(b.getViaggio().getId()).isPresent();
-                System.out.println("Viaggio esiste: " + viaggioEsiste);
-            }
-
             BigliettoDAO bigliettoDAO = new BigliettoDAO();
             int bigliettSalvati = bigliettoDAO.saveAll(bigliettiCreati, emailUtente);
-
-            System.out.println("Biglietti salvati: " + bigliettSalvati + "/" + bigliettiCreati.size());
 
             if (bigliettSalvati != bigliettiCreati.size()) {
                 inviaRispostaAcquistoErrore(responseObserver, "Errore nel salvataggio biglietti");
@@ -540,5 +507,89 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
         responseObserver.onCompleted();
 
         logger.warning("Errore modifica biglietto: " + messaggio);
+    }
+
+    @Override
+    public void inviaNotificaCliente(NotificaClienteRequest request,
+                                     StreamObserver<NotificaClienteResponse> responseObserver) {
+        try {
+            String tipoNotifica = request.getTipoNotifica();
+            String emailUtente = request.getEmailUtente();
+
+            logger.info("Richiesta notifica - Tipo: " + tipoNotifica + ", Utente: " + emailUtente);
+
+            if (tipoNotifica == null || tipoNotifica.trim().isEmpty()) {
+                inviaRispostaNotificaErrore(responseObserver, "Tipo notifica non specificato");
+                return;
+            }
+
+            if (emailUtente == null || emailUtente.trim().isEmpty()) {
+                inviaRispostaNotificaErrore(responseObserver, "Email utente non specificata");
+                return;
+            }
+
+            ClienteDAO clienteDAO = new ClienteDAO();
+            if (!clienteDAO.exists(emailUtente)) {
+                inviaRispostaNotificaErrore(responseObserver, "Cliente non trovato");
+                return;
+            }
+
+            String messaggio = generaMessaggioNotifica(tipoNotifica);
+            if (messaggio == null) {
+                inviaRispostaNotificaErrore(responseObserver, "Tipo notifica non riconosciuto");
+                return;
+            }
+
+            NotificaClienteResponse response = NotificaClienteResponse.newBuilder()
+                    .setSuccesso(true)
+                    .setMessaggio(messaggio)
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+            logger.info("Notifica inviata con successo: " + messaggio);
+
+        } catch (Exception e) {
+            logger.severe("Errore durante invio notifica: " + e.getMessage());
+            e.printStackTrace();
+            inviaRispostaNotificaErrore(responseObserver, "Errore interno del server");
+        }
+    }
+
+    public String generaMessaggioNotifica(String tipoNotifica) {
+        switch (tipoNotifica.toUpperCase()) {
+            case "SCADENZA_PRENOTAZIONE":
+                return "Il tuo carrello sta per scadere! Completa l'acquisto entro il tempo rimasto.";
+
+            case "RITARDO_TRENO":
+                return "Il tuo treno ha accumulato un ritardo. Controlla i dettagli nel tuo biglietto.";
+
+            case "CANCELLAZIONE_VIAGGIO":
+                return "Il tuo viaggio è stato cancellato. Verrai rimborsato automaticamente.";
+
+            case "CAMBIO_BINARIO":
+                return "Il binario del tuo treno è stato modificato. Controlla i dettagli nel tuo biglietto.";
+
+            case "PROMOZIONE_FEDELTA":
+                return "Nuova promozione Fedeltà disponibile.";
+
+            default:
+                logger.warning("Tipo notifica non riconosciuto: " + tipoNotifica);
+                return null;
+        }
+    }
+
+    private void inviaRispostaNotificaErrore(StreamObserver<NotificaClienteResponse> responseObserver,
+                                             String messaggio) {
+        NotificaClienteResponse errorResponse = NotificaClienteResponse.newBuilder()
+                .setSuccesso(false)
+                .setMessaggio("Errore: " + messaggio)
+                .build();
+
+        responseObserver.onNext(errorResponse);
+        responseObserver.onCompleted();
+
+        logger.warning("Errore notifica cliente: " + messaggio);
     }
 }

@@ -27,8 +27,8 @@ public class ClienteDAO {
      */
     public boolean save(Cliente cliente) {
         String sql = """
-            INSERT INTO clienti (email, password, nome, abbonamento_fedelta) 
-            VALUES (?, ?, ?, ?)
+            INSERT INTO clienti (email, password, nome, abbonamento_fedelta, notifiche_promozioni) 
+            VALUES (?, ?, ?, ?, ?)
             """;
 
         try (Connection conn = dbManager.getConnection();
@@ -38,6 +38,7 @@ public class ClienteDAO {
             stmt.setString(2, cliente.getPassword());
             stmt.setString(3, cliente.getNome());
             stmt.setBoolean(4, cliente.hasAbbonamentoFedelta());
+            stmt.setBoolean(5, cliente.hasNotificheAttive());
 
             int rowsAffected = stmt.executeUpdate();
 
@@ -113,7 +114,7 @@ public class ClienteDAO {
     public boolean update(Cliente cliente) {
         String sql = """
             UPDATE clienti 
-            SET nome = ?, password = ?, abbonamento_fedelta = ? 
+            SET nome = ?, password = ?, abbonamento_fedelta = ?, notifiche_promozioni = ? 
             WHERE email = ?
             """;
 
@@ -123,7 +124,8 @@ public class ClienteDAO {
             stmt.setString(1, cliente.getNome());
             stmt.setString(2, cliente.getPassword());
             stmt.setBoolean(3, cliente.hasAbbonamentoFedelta());
-            stmt.setString(4, cliente.getEmail());
+            stmt.setBoolean(4, cliente.hasNotificheAttive());
+            stmt.setString(5, cliente.getEmail());
 
             int rowsAffected = stmt.executeUpdate();
 
@@ -190,6 +192,27 @@ public class ClienteDAO {
         return clienti;
     }
 
+    public List<Cliente> findClientiFedeltaConNotificheAttive() {
+        List<Cliente> clienti = new ArrayList<>();
+        String sql = "SELECT * FROM clienti WHERE abbonamento_fedelta = 1 AND notifiche_promozioni = 1 ORDER BY email";
+
+        try (Connection conn = dbManager.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                clienti.add(mapResultSetToCliente(rs));
+            }
+
+            logger.info("Trovati " + clienti.size() + " clienti fedeltà");
+
+        } catch (SQLException e) {
+            logger.severe("Errore nel recupero clienti fedeltà: " + e.getMessage());
+        }
+
+        return clienti;
+    }
+
     /**
      * Verifica se esiste un cliente con la email specificata
      * @param email Email da verificare
@@ -237,19 +260,14 @@ public class ClienteDAO {
         return 0;
     }
 
-    /**
-     * Mappa un ResultSet a un oggetto Cliente
-     * @param rs ResultSet da mappare
-     * @return Cliente mappato
-     * @throws SQLException se errore SQL
-     */
     private Cliente mapResultSetToCliente(ResultSet rs) throws SQLException {
         String email = rs.getString("email");
         String password = rs.getString("password");
         String nome = rs.getString("nome");
         boolean abbonamentoFedelta = rs.getBoolean("abbonamento_fedelta");
+        boolean notificheAttive = rs.getBoolean("notifiche_promozioni");
 
-        return new Cliente(email, password, nome, abbonamentoFedelta);
+        return new Cliente(email, password, nome, abbonamentoFedelta, notificheAttive);
     }
 
     public Optional<Cliente> autenticaCliente(String email, String password) {

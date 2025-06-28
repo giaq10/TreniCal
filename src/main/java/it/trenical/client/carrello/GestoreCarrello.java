@@ -1,6 +1,6 @@
 package it.trenical.client.carrello;
 
-import it.trenical.grpc.ViaggioDTO;
+import it.trenical.client.gui.ClientApp;
 import javafx.scene.control.Label;
 
 import java.util.*;
@@ -14,6 +14,9 @@ public class GestoreCarrello {
     private final List<CarrelloItem> carrielloItems;
     private TimerCarrello timer;
 
+    private ClientApp clientApp;
+    private String emailUtente;
+
     private GestoreCarrello() {
         this.carrielloItems = new ArrayList<>();
         logger.info("GestoreCarrello inizializzato");
@@ -26,17 +29,7 @@ public class GestoreCarrello {
         return instance;
     }
 
-    public void aggiungiItem(CarrelloItem nuovoItem) {
-        System.out.println("=== DEBUG AGGIUNGI ITEM ===");
-        System.out.println("Nuovo item: " + nuovoItem.getViaggioId() );
-        System.out.println("Carrello attuale size: " + carrielloItems.size());
-
-        for (int i = 0; i < carrielloItems.size(); i++) {
-            CarrelloItem existing = carrielloItems.get(i);
-            System.out.println("Item " + i + ": " + existing.getViaggioId() );
-        }
-        logger.info("Aggiunta item carrello: " + nuovoItem.toString());
-
+    public void aggiungiItem(CarrelloItem nuovoItem, ClientApp clientApp, String emailUtente) {
         CarrelloItem esistente = null;
         for (CarrelloItem item : carrielloItems) {
             if (item.getViaggioId().equals(nuovoItem.getViaggioId())) {
@@ -47,21 +40,21 @@ public class GestoreCarrello {
 
         if (esistente != null) {
             esistente.incrementaQuantita(nuovoItem.getQuantita());
-            logger.info("Viaggio già presente - Quantità aggiornata a: " + esistente.getQuantita());
         } else {
             carrielloItems.add(nuovoItem);
-            logger.info("Nuovo viaggio aggiunto al carrello");
         }
+        this.clientApp=clientApp;
+        this.emailUtente=emailUtente;
 
-        avviaTimer();
+        avviaTimer(clientApp, emailUtente);
         logger.info("Carrello aggiornato - Totale viaggi: " + carrielloItems.size() +
                 ", Totale biglietti: " + getTotaleBiglietti());
     }
 
-    private void avviaTimer() {
+    private void avviaTimer(ClientApp clientApp, String emailUtente) {
         if(timer != null)
             timer.stopTimer();
-        timer = new TimerCarrello();
+        timer = new TimerCarrello(clientApp, emailUtente);
         timer.startTimer();
         logger.info("Timer carrello avviato");
     }
@@ -71,6 +64,7 @@ public class GestoreCarrello {
             int numItems = carrielloItems.size();
             int totaleBiglietti = getTotaleBiglietti();
             carrielloItems.clear();
+            timer.stopTimer();
             logger.info("Carrello svuotato - " + numItems + " items (" + totaleBiglietti + " biglietti) rimossi");
         }
     }
@@ -100,7 +94,7 @@ public class GestoreCarrello {
 
     public Label getTimerLabel() {
         if (timer == null) {
-            timer = new TimerCarrello();
+            timer = new TimerCarrello(clientApp, emailUtente);
         }
         return timer.getTimerLabel();
     }

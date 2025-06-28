@@ -12,6 +12,7 @@ service TrenicalService {
   rpc ConfermaAcquisto(ConfermaAcquistoRequest) returns (ConfermaAcquistoResponse);
   rpc VisualizzaBiglietti(VisualizzaBigliettiRequest) returns (VisualizzaBigliettiResponse);
   rpc ModificaBiglietto(ModificaBigliettoRequest) returns (ModificaBigliettoResponse);
+  rpc InviaNotificaCliente(NotificaClienteRequest) returns (NotificaClienteResponse);
 }
 
 message RicercaViaggioRequest {
@@ -132,4 +133,14 @@ message ModificaBigliettoResponse {
   double prezzo_precedente = 4;
   double prezzo_nuovo = 5;
   BigliettoDTO biglietto_aggiornato = 6;
+}
+
+message NotificaClienteRequest {
+  string tipo_notifica = 1;
+  string email_utente = 2;
+}
+
+message NotificaClienteResponse {
+  string messaggio = 1;
+  bool successo = 2;
 }

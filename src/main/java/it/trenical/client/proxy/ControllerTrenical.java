@@ -237,6 +237,41 @@ public class ControllerTrenical {
         }
     }
 
+    public RisultatoNotifica inviaNotifica(String tipoNotifica, String emailUtente) {
+        logger.info("Invio notifica: " + tipoNotifica + " per utente: " + emailUtente);
+
+        try {
+            NotificaClienteRequest request = NotificaClienteRequest.newBuilder()
+                    .setTipoNotifica(tipoNotifica)
+                    .setEmailUtente(emailUtente)
+                    .build();
+
+            NotificaClienteResponse response = blockingStub.inviaNotificaCliente(request);
+
+            RisultatoNotifica risultato = new RisultatoNotifica(
+                    response.getSuccesso(),
+                    response.getMessaggio()
+            );
+
+            if (risultato.isSuccesso()) {
+                logger.info("Notifica ricevuta: " + risultato.getMessaggio());
+            } else {
+                logger.warning("Errore notifica: " + risultato.getMessaggio());
+            }
+
+            return risultato;
+
+        } catch (StatusRuntimeException e) {
+            logger.severe("Errore nella chiamata gRPC notifica: " + e.getStatus());
+            String messaggio = "Errore di connessione al server";
+            return new RisultatoNotifica(false, messaggio);
+
+        } catch (Exception e) {
+            logger.severe("Errore imprevisto notifica: " + e.getMessage());
+            return new RisultatoNotifica(false, "Errore imprevisto: " + e.getMessage());
+        }
+    }
+
     public static class RisultatoRicerca {
         private final boolean successo;
         private final String messaggio;
@@ -333,5 +368,18 @@ public class ControllerTrenical {
             return String.format("Prezzo precedente: €%.2f\nPrezzo nuovo: €%.2f",
                     prezzoPrecedente, prezzoNuovo);
         }
+    }
+
+    public static class RisultatoNotifica {
+        private final boolean successo;
+        private final String messaggio;
+
+        public RisultatoNotifica(boolean successo, String messaggio) {
+            this.successo = successo;
+            this.messaggio = messaggio;
+        }
+
+        public boolean isSuccesso() { return successo; }
+        public String getMessaggio() { return messaggio; }
     }
 }

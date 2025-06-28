@@ -86,7 +86,9 @@ public class AdminVisualizzaDB {
                 sb.append(String.format("%d. Email: %s\n", i + 1, c.getEmail()));
                 sb.append(String.format("Nome: %s\n", c.getNome()));
                 sb.append(String.format("Abbonamento Fedeltà: %s\n",
-                        c.hasAbbonamentoFedelta() ? "SÌ" : "NO"));
+                        c.hasAbbonamentoFedelta() ? (
+                                c.hasNotificheAttive() ? "SI, con notifiche attive": "SI, senza notifiche attive")
+                                : "NO"));
                 sb.append("\n");
             }
             return sb.toString();

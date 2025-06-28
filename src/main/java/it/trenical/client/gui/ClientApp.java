@@ -952,6 +952,33 @@ public class ClientApp extends Application {
         return layout;
     }
 
+    public void mostraNotifica(String messaggio) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Notifica TreniCal");
+        alert.setHeaderText("Notifica Importante");
+        alert.setContentText(messaggio);
+
+
+        alert.show();
+    }
+
+    public void inviaEMostraNotifica(String tipoNotifica, String emailUtente) {
+        try {
+            ControllerTrenical.RisultatoNotifica risultato =
+                    controllerTrenical.inviaNotifica(tipoNotifica, emailUtente);
+
+            if (risultato.isSuccesso()) {
+                mostraNotifica(risultato.getMessaggio());
+            } else {
+                mostraErrore("Errore Notifica", risultato.getMessaggio());
+            }
+
+        } catch (Exception e) {
+            mostraErrore("Errore Sistema",
+                    "Errore durante l'invio della notifica: " + e.getMessage());
+        }
+    }
+
     public void mostraSuccesso(String titolo, String messaggio) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Successo");

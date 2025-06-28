@@ -1,5 +1,6 @@
 package it.trenical.client.carrello;
 
+import it.trenical.client.gui.ClientApp;
 import javafx.animation.AnimationTimer;
 import javafx.scene.control.Label;
 import java.time.Duration;
@@ -8,16 +9,21 @@ import java.time.LocalTime;
 public class TimerCarrello {
 
     private final int TEMPO = 120;
-    private final int AVVISO = 30;
+    private final int AVVISO = 90;
 
     private Label timerLabel = new Label();
     private boolean avvisoStampato = false;
     private boolean terminato = false;
     private AnimationTimer timer;
 
-    public TimerCarrello() {
+    private ClientApp clientApp;
+    private String emailUtente;
+
+    public TimerCarrello(ClientApp clientApp, String emailUtente) {
         timerLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: black;");
         timerLabel.setText("00:10");
+        this.clientApp=clientApp;
+        this.emailUtente=emailUtente;
     }
 
     public Label getTimerLabel() {
@@ -43,6 +49,7 @@ public class TimerCarrello {
                     if (secondsRemaining == AVVISO && !avvisoStampato) {
                         System.out.println(AVVISO+" secondi rimanenti nel carrello");
                         avvisoStampato = true;
+                        clientApp.inviaEMostraNotifica("SCADENZA_PRENOTAZIONE", emailUtente);
                     }
                 } else {
                     System.out.println("Timer carrello terminato");

@@ -12,11 +12,12 @@ public class Cliente implements Observer {
     private String password;
     private String nome;
     private boolean abbonamentoFedelta;
+    private boolean notificheAttive;
     private final List<Biglietto> bigliettiAcquistati;
 
     private final List<Notifica> notificheRicevute;
 
-    public Cliente(String email, String password ,String nome, boolean abbonamentoFedelta) {
+    public Cliente(String email, String password ,String nome, boolean abbonamentoFedelta, boolean notificheAttive) {
         if (!isEmailValida(email))
             throw new IllegalArgumentException("Email non valida");
         if (password == null || password.trim().isEmpty() || password.length()<6)
@@ -27,19 +28,19 @@ public class Cliente implements Observer {
         this.password = password;
         this.nome = nome.trim();
         this.abbonamentoFedelta = abbonamentoFedelta;
+        this.notificheAttive = notificheAttive;
         this.bigliettiAcquistati = new ArrayList<>();
 
         this.notificheRicevute = new ArrayList<>();
     }
 
     public Cliente(String email,String password, String nome) {
-        this(email, password, nome, false);
+        this(email, password, nome, false, false);
     }
 
     @Override
     public void update(Notifica notifica) {
         notificheRicevute.add(notifica);
-
     }
 
     @Override
@@ -67,62 +68,25 @@ public class Cliente implements Observer {
 
     public void disattivaAbbonamentoFedelta() {
         this.abbonamentoFedelta = false;
+        this.notificheAttive = false;
     }
 
-    public void addBiglietto(Biglietto biglietto) {
-        if (biglietto == null) {
-            throw new IllegalArgumentException("Biglietto non può essere null");
+    public void attivaNotifichePromozioni() {
+        if (!abbonamentoFedelta) {
+            throw new IllegalStateException("Le notifiche promozioni sono disponibili solo per clienti fedeltà");
         }
-        bigliettiAcquistati.add(biglietto);
+        this.notificheAttive = true;
     }
 
-    public void addBiglietti(List<Biglietto> biglietti) {
-        if (biglietti == null) {
-            throw new IllegalArgumentException("Lista biglietti non può essere null");
-        }
-        for (Biglietto biglietto : biglietti) {
-            addBiglietto(biglietto);
-        }
+    public void disattivaNotifichePromozioni() {
+        this.notificheAttive = false;
     }
 
-    public boolean removeBiglietto(Biglietto biglietto) {
-        return bigliettiAcquistati.remove(biglietto);
+    public boolean riceviNotificheFedelta() {
+        return abbonamentoFedelta && notificheAttive;
     }
 
-    public boolean removeBigliettoById(String idBiglietto) {
-        return bigliettiAcquistati.removeIf(b -> b.getId().equals(idBiglietto));
-    }
 
-    public Biglietto getBigliettoById(String idBiglietto) {
-        return bigliettiAcquistati.stream()
-                .filter(b -> b.getId().equals(idBiglietto))
-                .findFirst()
-                .orElse(null);
-    }
-
-    public List<Biglietto> getBiglietti() {
-        return Collections.unmodifiableList(bigliettiAcquistati);
-    }
-
-    public int getNumeroBiglietti() {
-        return bigliettiAcquistati.size();
-    }
-
-    public boolean hasBiglietti() {
-        return !bigliettiAcquistati.isEmpty();
-    }
-
-    public double getTotaleSpeso() {
-        return bigliettiAcquistati.stream()
-                .mapToDouble(Biglietto::getPrezzo)
-                .sum();
-    }
-
-    public List<Biglietto> getBigliettiValidi() {
-        return bigliettiAcquistati.stream()
-                .filter(b -> !b.isCancellato())
-                .toList();
-    }
 
     public void setNome(String nuovoNome) {
         if (nuovoNome == null || nuovoNome.trim().isEmpty()) {
@@ -145,27 +109,13 @@ public class Cliente implements Observer {
         return abbonamentoFedelta;
     }
 
+    public boolean hasNotificheAttive() {return notificheAttive;}
+
     public String getStatusAbbonamento() {
         return abbonamentoFedelta ? "Abbonato Fedeltà" : "Cliente Standard";
     }
 
-    public String getStatisticheCliente() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== STATISTICHE CLIENTE ===\n");
-        sb.append("Nome: ").append(nome).append("\n");
-        sb.append("Email: ").append(email).append("\n");
-        sb.append("Status: ").append(getStatusAbbonamento()).append("\n");
-        sb.append("Biglietti totali: ").append(getNumeroBiglietti()).append("\n");
-        sb.append("Biglietti validi: ").append(getBigliettiValidi().size()).append("\n");
-        sb.append("Totale speso: €").append(String.format("%.2f", getTotaleSpeso())).append("\n");
 
-        if (getNumeroBiglietti() > 0) {
-            double mediaSpesa = getTotaleSpeso() / getNumeroBiglietti();
-            sb.append("Spesa media per biglietto: €").append(String.format("%.2f", mediaSpesa)).append("\n");
-        }
-
-        return sb.toString();
-    }
 
     @Override
     public boolean equals(Object obj) {
