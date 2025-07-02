@@ -13,6 +13,7 @@ service TrenicalService {
   rpc VisualizzaBiglietti(VisualizzaBigliettiRequest) returns (VisualizzaBigliettiResponse);
   rpc ModificaBiglietto(ModificaBigliettoRequest) returns (ModificaBigliettoResponse);
   rpc InviaNotificaCliente(NotificaClienteRequest) returns (NotificaClienteResponse);
+  rpc ControllaNotifichePendenti(ControllaNotificheRequest) returns (ControllaNotificheResponse);
 }
 
 message RicercaViaggioRequest {
@@ -143,4 +144,13 @@ message NotificaClienteRequest {
 message NotificaClienteResponse {
   string messaggio = 1;
   bool successo = 2;
+}
+
+message ControllaNotificheRequest {
+  string email_utente = 1;
+}
+
+message ControllaNotificheResponse {
+  bool ci_sono_notifiche = 1;
+  string messaggio = 2;
 }

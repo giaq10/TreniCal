@@ -131,6 +131,37 @@ public class BigliettoDAO {
         return biglietti;
     }
 
+    public List<String> findEmailClientiByViaggioId(String viaggioId) {
+        List<String> emailClienti = new ArrayList<>();
+
+        if (viaggioId == null || viaggioId.trim().isEmpty()) {
+            logger.warning("ViaggioId null o vuoto per findEmailClientiByViaggioId");
+            return emailClienti;
+        }
+
+        String sql = "SELECT DISTINCT cliente_email FROM biglietti WHERE viaggio_id = ?";
+
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, viaggioId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                String email = rs.getString("cliente_email");
+                if (email != null && !email.trim().isEmpty()) {
+                    emailClienti.add(email);
+                }
+            }
+
+        } catch (SQLException e) {
+            logger.severe("Errore nel recupero email clienti per viaggio " + viaggioId + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return emailClienti;
+    }
+
     private static class BigliettoDatabase {
         final String id;
         final String nominativo;

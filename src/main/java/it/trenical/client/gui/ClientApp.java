@@ -8,6 +8,7 @@ import it.trenical.grpc.BigliettoDTO;
 import it.trenical.grpc.ViaggioDTO;
 import it.trenical.common.stazioni.Stazione;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.*;
 import javafx.scene.*;
 import javafx.scene.control.*;
@@ -18,9 +19,7 @@ import javafx.stage.*;
 
 import java.io.InputStream;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class ClientApp extends Application {
 
@@ -30,6 +29,8 @@ public class ClientApp extends Application {
 
     private TabPane mainTabPane;
     private VBox layoutCarrello;
+
+    private Timer timerNotifiche;
 
     private ListView<ViaggioDTO> viaggiListView;
     private ListView<BigliettoDTO> bigliettiListView;
@@ -51,7 +52,30 @@ public class ClientApp extends Application {
         });
 
         primaryStage.show();
+        avviaPollingNotifiche();
         System.out.println("GUI Cliente avviata con successo!");
+    }
+
+    public void avviaPollingNotifiche() {
+        timerNotifiche = new Timer();
+        timerNotifiche.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    ControllerTrenical.RisultatoNotifichePendenti risultato =
+                            controllerTrenical.controllaNotifichePendenti(emailUtente);
+
+                    if (risultato.ciSonoNotifiche()) {
+                        Platform.runLater(() -> {
+                            mostraNotifica(risultato.getMessaggio());
+                        });
+                    }
+
+                } catch (Exception e) {
+                    System.err.println("Errore polling notifiche: " + e.getMessage());
+                }
+            }
+        }, 10000, 10000);
     }
 
     private VBox creaInterfacciaPrincipale() {
@@ -310,17 +334,6 @@ public class ClientApp extends Application {
 
         infoGrid.add(new Label("Distanza:"), 0, riga);
         infoGrid.add(new Label(viaggio.getDistanzaKm() + " km"), 1, riga++);
-
-        infoGrid.add(new Label("Stato:"), 0, riga);
-        Label statoLabel = new Label(viaggio.getStato());
-
-        switch (viaggio.getStato().toUpperCase()) {
-            case "PROGRAMMATO" -> statoLabel.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
-            case "RITARDO" -> statoLabel.setStyle("-fx-text-fill: orange; -fx-font-weight: bold;");
-            case "CANCELLATO" -> statoLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
-            default -> statoLabel.setStyle("-fx-font-weight: bold;");
-        }
-        infoGrid.add(statoLabel, 1, riga++);
 
         infoGrid.add(new Label("Posti disponibili:"), 0, riga);
         infoGrid.add(new Label(String.valueOf(viaggio.getPostiDisponibili())), 1, riga++);

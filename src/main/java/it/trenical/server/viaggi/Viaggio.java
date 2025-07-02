@@ -95,7 +95,7 @@ public class Viaggio implements Subject {
                    LocalTime orarioPartenza, LocalTime orarioArrivo, LocalDate dataArrivo,
                    double prezzo, int durataMinuti, int postiDisponibili,
                    StatoViaggio stato, Binario binarioPartenza,
-                    String motivoCancellazione) {
+                   String motivoCancellazione) {
 
         if (treno == null) throw new IllegalArgumentException("Treno obbligatorio");
         if (tratta == null) throw new IllegalArgumentException("Tratta obbligatoria");
@@ -178,27 +178,10 @@ public class Viaggio implements Subject {
         this.stato = nuovoStato;
     }
 
-    public void cambioOrarioPartenza(LocalTime nuovoOrario) {
-        this.orarioPartenzaEffettivo = nuovoOrario;
-        LocalDateTime nuovaDataOraArrivo = calcolaDataOraArrivo(dataViaggio, nuovoOrario, durataMinuti);
-        this.orarioArrivoEffettivo = nuovaDataOraArrivo.toLocalTime();
-        this.dataArrivoEffettiva = nuovaDataOraArrivo.toLocalDate();
-
-        notifyObservers(new Notifica(
-                TipoNotifica.CAMBIO_ORARIO_PARTENZA,
-                "Il tuo treno ha un nuovo orario di partenza: " + nuovoOrario
-        ));
-    }
-
     public void cambioBinario(int nuovoBinario) {
         Binario[] binari = Binario.values();
         if (nuovoBinario >= 0 && nuovoBinario < binari.length) {
             this.binarioPartenza = binari[nuovoBinario];
-
-            notifyObservers(new Notifica(
-                    TipoNotifica.CAMBIO_BINARIO,
-                    "Il tuo treno cambierà binario: " + binarioPartenza.getDescrizione()
-            ));
         }
     }
 
@@ -214,34 +197,19 @@ public class Viaggio implements Subject {
             this.orarioArrivoEffettivo = dataOraArrivoConRitardo.toLocalTime();
             this.dataArrivoEffettiva = dataOraArrivoConRitardo.toLocalDate();
 
-            if (this.stato == StatoViaggio.PROGRAMMATO || this.stato == StatoViaggio.CONFERMATO) {
+            if (this.stato == StatoViaggio.PROGRAMMATO || this.stato == StatoViaggio.CONFERMATO)
                 this.stato = StatoViaggio.RITARDO;
-            }
-
-            notifyObservers(new Notifica(
-                    TipoNotifica.RITARDO_TRENO,
-                    "Il tuo treno ha accumulato un ritardo di " + minuti + " minuti"
-            ));
 
         } else {
             this.orarioPartenzaEffettivo = orarioPartenzaProgrammato;
             this.orarioArrivoEffettivo = orarioArrivoProgrammato;
             this.dataArrivoEffettiva = dataArrivoProgrammata;
-
-            if (this.stato == StatoViaggio.RITARDO) {
-                this.stato = StatoViaggio.CONFERMATO;
-            }
         }
     }
 
     public void cancellaViaggio(String motivo) {
         this.stato = StatoViaggio.CANCELLATO;
         this.motivoCancellazione = motivo;
-
-        notifyObservers(new Notifica(
-                TipoNotifica.CANCELLAZIONE_VIAGGIO,
-                "Il tuo viaggio è stato cancellato. Motivo: " + motivo
-        ));
     }
 
     public void applicaPromozione(Promozione promozione) {
@@ -400,6 +368,9 @@ public class Viaggio implements Subject {
         for (Observer observer : observers) {
             observer.update(notifica);
         }
+        observers.clear();
+        System.out.println("✅ Observer list pulita per viaggio " + getId() +
+                " dopo invio notifica " + notifica.getTipo());
     }
 
     @Override

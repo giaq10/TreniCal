@@ -7,6 +7,7 @@ import it.trenical.common.stazioni.Stazione;
 import it.trenical.server.db.dao.BigliettoDAO;
 import it.trenical.server.db.dao.ClienteDAO;
 import it.trenical.server.db.dao.ViaggioDAO;
+import it.trenical.server.gui.AdminViaggi;
 import it.trenical.server.viaggi.Viaggio;
 
 import java.time.LocalDate;
@@ -554,6 +555,43 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
             logger.severe("Errore durante invio notifica: " + e.getMessage());
             e.printStackTrace();
             inviaRispostaNotificaErrore(responseObserver, "Errore interno del server");
+        }
+    }
+    @Override
+    public void controllaNotifichePendenti(ControllaNotificheRequest request,
+                                           StreamObserver<ControllaNotificheResponse> responseObserver) {
+        try {
+            String emailUtente = request.getEmailUtente();
+
+            String messaggio = AdminViaggi.trovaNotificaPerEmail(emailUtente);
+
+            ControllaNotificheResponse response;
+            if (messaggio != null) {
+                response = ControllaNotificheResponse.newBuilder()
+                        .setCiSonoNotifiche(true)
+                        .setMessaggio(messaggio)
+                        .build();
+                logger.info("Notifica trovata per " + emailUtente + ": " + messaggio);
+            } else {
+                response = ControllaNotificheResponse.newBuilder()
+                        .setCiSonoNotifiche(false)
+                        .setMessaggio("")
+                        .build();
+            }
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            logger.severe("Errore controllo notifiche: " + e.getMessage());
+
+            ControllaNotificheResponse errorResponse = ControllaNotificheResponse.newBuilder()
+                    .setCiSonoNotifiche(false)
+                    .setMessaggio("Errore server")
+                    .build();
+
+            responseObserver.onNext(errorResponse);
+            responseObserver.onCompleted();
         }
     }
 

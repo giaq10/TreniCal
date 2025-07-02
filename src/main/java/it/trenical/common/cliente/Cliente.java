@@ -2,8 +2,8 @@ package it.trenical.common.cliente;
 
 import it.trenical.common.observer.Notifica;
 import it.trenical.common.observer.Observer;
+import it.trenical.server.gui.AdminViaggi;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -41,6 +41,9 @@ public class Cliente implements Observer {
     @Override
     public void update(Notifica notifica) {
         notificheRicevute.add(notifica);
+        String notificaCompleta = this.email + "|" + notifica.getMessaggio();
+        AdminViaggi.aggiungiNotificaStatica(notificaCompleta);
+        System.out.println("Cliente " + email + " ha ricevuto notifica: " + notifica.getMessaggio());
     }
 
     @Override

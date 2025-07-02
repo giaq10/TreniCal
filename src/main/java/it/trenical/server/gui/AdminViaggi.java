@@ -1,5 +1,11 @@
 package it.trenical.server.gui;
 
+import it.trenical.common.cliente.Cliente;
+import it.trenical.common.observer.Notifica;
+import it.trenical.common.observer.TipoNotifica;
+import it.trenical.server.db.dao.BigliettoDAO;
+import it.trenical.server.db.dao.ClienteDAO;
+import it.trenical.server.grpc.TrenicalServiceImpl;
 import it.trenical.server.viaggi.StatoViaggio;
 import it.trenical.server.viaggi.Viaggio;
 import it.trenical.server.db.DatabaseManager;
@@ -24,10 +30,16 @@ public class AdminViaggi {
     private final ViaggioDAO viaggioDAO;
     private final ServerAdminApp gui;
 
+    private final TrenicalServiceImpl trenicalService;
+    private final BigliettoDAO bigliettoDAO;
+
+    private static List<String> notificheDaInviare = new ArrayList<>();
+
     public AdminViaggi(ViaggioDAO viaggioDAO, ServerAdminApp gui) {
         this.viaggioDAO = viaggioDAO;
         this.gui = gui;
-
+        this.trenicalService = new TrenicalServiceImpl();
+        this.bigliettoDAO = new BigliettoDAO();
         logger.info("AdminViaggi inizializzato");
     }
 
@@ -43,8 +55,7 @@ public class AdminViaggi {
 
             Viaggio viaggio = viaggioOpt.get();
             if (viaggio.getStato() != StatoViaggio.PROGRAMMATO && viaggio.getStato() != StatoViaggio.RITARDO) {
-                gui.mostraErrore("Operazione Non Consentita",
-                        "Stato del Viaggio illegale");
+                gui.mostraErrore("Operazione Non Consentita", "Stato del Viaggio illegale");
                 return;
             }
             if (viaggio.getDataViaggio().isBefore(LocalDate.now())) {
@@ -57,25 +68,21 @@ public class AdminViaggi {
             viaggio.aggiornaStato(StatoViaggio.RITARDO);
             boolean aggiornato = viaggioDAO.updateViaggioCompleto(viaggio);
             if(aggiornato) {
+                notificaClientiViaggio(viaggioId, "RITARDO_TRENO");
+
                 String messaggio = String.format(
-                        "Ritardo impostato per il viaggio %s. \n Clienti notificati automaticamente: %d",
-                        viaggioId,
-                        viaggio.getObserverCount()
+                        "Ritardo impostato per il viaggio %s.\nClienti notificati automaticamente.",
+                        viaggioId
                 );
                 gui.mostraSuccesso("Ritardo Impostato", messaggio);
                 logger.info(String.format("Ritardo viaggio %s:", viaggioId)
                 );
             }
 
-        } catch (IllegalArgumentException e) {
-            logger.warning("Validazione fallita impostazione ritardo: " + e.getMessage());
-            gui.mostraErrore("Dati Non Validi", e.getMessage());
-
         } catch (Exception e) {
             logger.severe("Errore ritardo: " + e.getMessage());
             e.printStackTrace();
-            gui.mostraErrore("Errore","Errore durante l'impostazione del ritardo: " + e.getMessage()
-            );
+            gui.mostraErrore("Errore","Errore durante l'impostazione del ritardo: " + e.getMessage());
         }
     }
 
@@ -92,18 +99,18 @@ public class AdminViaggi {
 
             Viaggio viaggio = viaggioOpt.get();
             if (viaggio.getStato() == StatoViaggio.ARRIVATO || viaggio.getStato() == StatoViaggio.IN_VIAGGIO) {
-                gui.mostraErrore("Operazione Non Consentita",
-                        "Impossibile cancellare il viaggio");
+                gui.mostraErrore("Operazione Non Consentita", "Impossibile cancellare il viaggio");
                 return;
             }
+
+            notificaClientiViaggio(viaggioId, "CANCELLAZIONE_VIAGGIO");
 
             viaggio.cancellaViaggio(motivo);
             boolean aggiornato = viaggioDAO.delete(viaggioId);
             if(aggiornato) {
                 String messaggioSuccesso = String.format(
-                        "Viaggio %s cancellato. \n Clienti notificati automaticamente: %d",
-                        viaggioId,
-                        viaggio.getObserverCount()
+                        "Viaggio %s cancellato.\nClienti notificati automaticamente.",
+                        viaggioId
                 );
                 gui.mostraSuccesso("Viaggio Cancellato", messaggioSuccesso);
                 logger.info("Viaggio cancellato");
@@ -126,9 +133,8 @@ public class AdminViaggi {
             }
 
             Viaggio viaggio = viaggioOpt.get();
-            if (viaggio.getStato() != StatoViaggio.PROGRAMMATO || viaggio.getStato() != StatoViaggio.RITARDO) {
-                gui.mostraErrore("Operazione Non Consentita",
-                        "Impossibile modificare il viaggio");
+            if (viaggio.getStato() != StatoViaggio.PROGRAMMATO && viaggio.getStato() != StatoViaggio.RITARDO) {
+                gui.mostraErrore("Operazione Non Consentita", "Impossibile modificare il viaggio");
                 return;
             }
 
@@ -142,9 +148,11 @@ public class AdminViaggi {
             viaggio.cambioBinario(nuovoBinario-1);
             boolean aggiornato = viaggioDAO.updateViaggioCompleto(viaggio);
             if (aggiornato) {
+                notificaClientiViaggio(viaggioId, "CAMBIO_BINARIO");
+
                 String messaggio = String.format(
-                        "Binario cambiato con successo\n" +
-                                "Viaggio: %s",viaggioId
+                        "Binario cambiato con successo per viaggio %s.\nClienti notificati automaticamente.",
+                        viaggioId
                 );
                 gui.mostraSuccesso("Binario Cambiato", messaggio);
                 logger.info("Binario cambiato: " + nuovoBinario);
@@ -153,6 +161,58 @@ public class AdminViaggi {
         } catch (Exception e) {
             logger.severe("Errore cambio binario: " + e.getMessage());
             gui.mostraErrore("Errore","Errore durante il cambio binario: " + e.getMessage());
+        }
+    }
+
+    private void notificaClientiViaggio(String viaggioId, String tipoNotifica) {
+        try {
+            List<String> emailClienti = bigliettoDAO.findEmailClientiByViaggioId(viaggioId);
+            String messaggio = trenicalService.generaMessaggioNotifica(tipoNotifica);
+
+            Optional<Viaggio> viaggioOpt = viaggioDAO.findById(viaggioId);
+            if (viaggioOpt.isEmpty()) {
+                logger.warning("Viaggio non trovato per notifica: " + viaggioId);
+                return;
+            }
+            Viaggio viaggio = viaggioOpt.get();
+
+            ClienteDAO clienteDAO = new ClienteDAO();
+            for (String emailCliente : emailClienti) {
+                Optional<Cliente> clienteOpt = clienteDAO.findByEmail(emailCliente);
+                if (clienteOpt.isPresent()) {
+                    Cliente cliente = clienteOpt.get();
+                    viaggio.attach(cliente);
+                    logger.info("Cliente " + emailCliente + " registrato come observer per viaggio " + viaggioId);
+                }
+            }
+
+            Notifica notifica = new Notifica(
+                    TipoNotifica.valueOf(tipoNotifica),
+                    messaggio
+            );
+            viaggio.notifyObservers(notifica);
+
+        } catch (Exception e) {
+            logger.severe("Errore nell'invio notifiche via Observer: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public static String trovaNotificaPerEmail(String email) {
+        for (int i = 0; i < notificheDaInviare.size(); i++) {
+            String notifica = notificheDaInviare.get(i);
+            if (notifica.contains(email)) {
+                notificheDaInviare.remove(i);
+                return notifica.substring(email.length() + 1); // Rimuovi "email|"
+            }
+        }
+        return null;
+    }
+
+    public static void aggiungiNotificaStatica(String notificaCompleta) {
+        if (notificaCompleta != null && !notificaCompleta.trim().isEmpty()) {
+            notificheDaInviare.add(notificaCompleta);
+            logger.info("NOTIFICA AGGIUNTA " + notificaCompleta);
         }
     }
 
@@ -187,7 +247,7 @@ public class AdminViaggi {
                                     viaggioCreato = true;
                                 }
                             } catch (IllegalArgumentException e) {
-                                    logger.fine("Tentativo ignorato");
+                                logger.fine("Tentativo ignorato");
                             } catch (Exception e) {
                                 logger.warning("Errore imprevisto creazione viaggio: " + e.getMessage());
                             }
@@ -201,10 +261,8 @@ public class AdminViaggi {
                 dataCorrente = dataCorrente.plusDays(1);
             }
             String risultatiFinali = String.format(
-                            "Viaggi attesi: %,d\n" +
-                            "Viaggi creati con successo: %,d",
-                            viaggiTotaliAttesi,
-                            viaggiCreati
+                    "Viaggi attesi: %,d\n" + "Viaggi creati con successo: %,d",
+                    viaggiTotaliAttesi, viaggiCreati
             );
 
             logger.info(risultatiFinali);

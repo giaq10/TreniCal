@@ -272,6 +272,29 @@ public class ControllerTrenical {
         }
     }
 
+    public RisultatoNotifichePendenti controllaNotifichePendenti(String emailUtente) {
+        try {
+            ControllaNotificheRequest request = ControllaNotificheRequest.newBuilder()
+                    .setEmailUtente(emailUtente)
+                    .build();
+
+            ControllaNotificheResponse response = blockingStub.controllaNotifichePendenti(request);
+
+            return new RisultatoNotifichePendenti(
+                    response.getCiSonoNotifiche(),
+                    response.getMessaggio()
+            );
+
+        } catch (StatusRuntimeException e) {
+            logger.warning("Errore gRPC controllo notifiche: " + e.getStatus());
+            return new RisultatoNotifichePendenti(false, "");
+
+        } catch (Exception e) {
+            logger.severe("Errore controllo notifiche: " + e.getMessage());
+            return new RisultatoNotifichePendenti(false, "");
+        }
+    }
+
     public static class RisultatoRicerca {
         private final boolean successo;
         private final String messaggio;
@@ -380,6 +403,19 @@ public class ControllerTrenical {
         }
 
         public boolean isSuccesso() { return successo; }
+        public String getMessaggio() { return messaggio; }
+    }
+
+    public static class RisultatoNotifichePendenti {
+        private final boolean ciSonoNotifiche;
+        private final String messaggio;
+
+        public RisultatoNotifichePendenti(boolean ciSonoNotifiche, String messaggio) {
+            this.ciSonoNotifiche = ciSonoNotifiche;
+            this.messaggio = messaggio;
+        }
+
+        public boolean ciSonoNotifiche() { return ciSonoNotifiche; }
         public String getMessaggio() { return messaggio; }
     }
 }
