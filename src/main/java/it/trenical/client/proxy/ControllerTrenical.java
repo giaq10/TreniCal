@@ -118,10 +118,6 @@ public class ControllerTrenical {
                                               List<String> nominativi,
                                               String modalitaPagamento,
                                               String emailUtente) {
-        logger.info("Conferma acquisto: " + carrelloItems.size() + " items, " + nominativi.size() + " nominativi");
-        System.out.println("=== DEBUG CONTROLLER ===");
-        System.out.println("Items: " + carrelloItems.size());
-        System.out.println("Nominativi: " + nominativi.size());
         try {
             List<CarrelloItemDTO> itemsDTO = new ArrayList<>();
             for (CarrelloItem item : carrelloItems) {
@@ -140,12 +136,7 @@ public class ControllerTrenical {
                     .setModalitaPagamento(modalitaPagamento)
                     .build();
 
-            System.out.println("Invio richiesta al server...");
             ConfermaAcquistoResponse response = blockingStub.confermaAcquisto(request);
-
-            System.out.println("Risposta server:");
-            System.out.println("- Successo: " + response.getSuccesso());
-            System.out.println("- Messaggio: " + response.getMessaggio());
 
             return new RisultatoAcquisto(
                     response.getSuccesso(),
@@ -156,7 +147,6 @@ public class ControllerTrenical {
 
         } catch (Exception e) {
             logger.severe("Errore conferma acquisto: " + e.getMessage());
-            System.out.println("ERRORE CONTROLLER: " + e.getMessage());
             e.printStackTrace();
             return new RisultatoAcquisto(false, "Errore: " + e.getMessage(), 0, 0.0);
         }
@@ -295,6 +285,71 @@ public class ControllerTrenical {
         }
     }
 
+    public RisultatoLogin login(String email, String password, String nome) {
+        logger.info("Richiesta login per: " + email);
+
+        try {
+            LoginRequest request = LoginRequest.newBuilder()
+                    .setEmail(email.trim())
+                    .setPassword(password)
+                    .setNome(nome.trim())
+                    .build();
+
+            LoginResponse response = blockingStub.login(request);
+
+            ClienteDTO clienteDTO = null;
+            if (response.getSuccesso() && response.hasCliente()) {
+                clienteDTO = response.getCliente();
+            }
+
+            return new RisultatoLogin(
+                    response.getSuccesso(),
+                    response.getMessaggio(),
+                    clienteDTO
+            );
+
+        } catch (StatusRuntimeException e) {
+            logger.severe("Errore gRPC durante login: " + e.getStatus());
+            String messaggio = "Errore di connessione al server";
+            return new RisultatoLogin(false, messaggio, null);
+
+        } catch (Exception e) {
+            logger.severe("Errore imprevisto durante login: " + e.getMessage());
+            return new RisultatoLogin(false, "Errore imprevisto: " + e.getMessage(), null);
+        }
+    }
+
+    public RisultatoAbbonamento gestisciAbbonamento(String emailUtente, boolean vuoleNotifiche) {
+        try {
+            if (emailUtente == null || emailUtente.trim().isEmpty()) {
+                return new RisultatoAbbonamento(false, "Email utente obbligatoria", false, false);
+            }
+
+            GestisciAbbonamentoRequest request = GestisciAbbonamentoRequest.newBuilder()
+                    .setEmailUtente(emailUtente)
+                    .setNotifiche(vuoleNotifiche)
+                    .build();
+
+            GestisciAbbonamentoResponse response = blockingStub.gestisciAbbonamento(request);
+
+            return new RisultatoAbbonamento(
+                    response.getSuccesso(),
+                    response.getMessaggio(),
+                    response.getNuovoStatoAbbonamento(),
+                    response.getNotificheAttive()
+            );
+
+        } catch (StatusRuntimeException e) {
+            logger.severe("Errore gRPC gestione abbonamento: " + e.getStatus());
+            String messaggio = "Errore di connessione al server";
+            return new RisultatoAbbonamento(false, messaggio, false, false);
+
+        } catch (Exception e) {
+            logger.severe("Errore imprevisto gestione abbonamento: " + e.getMessage());
+            return new RisultatoAbbonamento(false, "Errore imprevisto: " + e.getMessage(), false, false);
+        }
+    }
+
     public static class RisultatoRicerca {
         private final boolean successo;
         private final String messaggio;
@@ -417,5 +472,40 @@ public class ControllerTrenical {
 
         public boolean ciSonoNotifiche() { return ciSonoNotifiche; }
         public String getMessaggio() { return messaggio; }
+    }
+
+    public static class RisultatoLogin {
+        private final boolean successo;
+        private final String messaggio;
+        private final ClienteDTO cliente;
+
+        public RisultatoLogin(boolean successo, String messaggio, ClienteDTO cliente) {
+            this.successo = successo;
+            this.messaggio = messaggio;
+            this.cliente = cliente;
+        }
+
+        public boolean isSuccesso() { return successo; }
+        public String getMessaggio() { return messaggio; }
+        public ClienteDTO getCliente() { return cliente; }
+    }
+
+    public static class RisultatoAbbonamento {
+        private final boolean successo;
+        private final String messaggio;
+        private final boolean abbonato;
+        private final boolean notificheAttive;
+
+        public RisultatoAbbonamento(boolean successo, String messaggio, boolean abbonato, boolean notificheAttive) {
+            this.successo = successo;
+            this.messaggio = messaggio;
+            this.abbonato = abbonato;
+            this.notificheAttive = notificheAttive;
+        }
+
+        public boolean isSuccesso() { return successo; }
+        public String getMessaggio() { return messaggio; }
+        public boolean isAbbonato() { return abbonato; }
+        public boolean hasNotificheAttive() { return notificheAttive; }
     }
 }

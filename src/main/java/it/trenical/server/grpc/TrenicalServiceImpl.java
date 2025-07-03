@@ -2,6 +2,7 @@ package it.trenical.server.grpc;
 
 import io.grpc.stub.StreamObserver;
 import it.trenical.common.cliente.Biglietto;
+import it.trenical.common.cliente.Cliente;
 import it.trenical.grpc.*;
 import it.trenical.common.stazioni.Stazione;
 import it.trenical.server.db.dao.BigliettoDAO;
@@ -629,5 +630,186 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
         responseObserver.onCompleted();
 
         logger.warning("Errore notifica cliente: " + messaggio);
+    }
+
+    @Override
+    public void login(LoginRequest request, StreamObserver<LoginResponse> responseObserver) {
+        try {
+            String email = request.getEmail();
+            String password = request.getPassword();
+            String nome = request.getNome();
+
+            logger.info("Richiesta login per email: " + email);
+
+            ClienteDAO clienteDAO = new ClienteDAO();
+
+            Optional<Cliente> clienteEsistente = clienteDAO.findByEmail(email);
+
+            if (clienteEsistente.isPresent()) {
+                Cliente cliente = clienteEsistente.get();
+
+                if (cliente.autenticaPassword(password)) {
+                    ClienteDTO clienteDTO = ClienteDTO.newBuilder()
+                            .setEmail(cliente.getEmail())
+                            .setNome(cliente.getNome())
+                            .setAbbonamentoFedelta(cliente.hasAbbonamentoFedelta())
+                            .setNotificheAttive(cliente.hasNotificheAttive())
+                            .build();
+
+                    LoginResponse response = LoginResponse.newBuilder()
+                            .setSuccesso(true)
+                            .setMessaggio("Accesso effettuato con successo")
+                            .setCliente(clienteDTO)
+                            .build();
+
+                    responseObserver.onNext(response);
+                    responseObserver.onCompleted();
+
+                    logger.info("Login riuscito per cliente esistente: " + email);
+                } else {
+                    inviaRispostaLoginErrore(responseObserver, "Password errata");
+                    logger.warning("Tentativo login con password errata per: " + email);
+                }
+
+            } else {
+                try {
+                    Cliente nuovoCliente = new Cliente(email, password, nome);
+
+                    boolean salvato = clienteDAO.save(nuovoCliente);
+
+                    if (salvato) {
+                        ClienteDTO clienteDTO = ClienteDTO.newBuilder()
+                                .setEmail(nuovoCliente.getEmail())
+                                .setNome(nuovoCliente.getNome())
+                                .setAbbonamentoFedelta(nuovoCliente.hasAbbonamentoFedelta())
+                                .setNotificheAttive(nuovoCliente.hasNotificheAttive())
+                                .build();
+
+                        LoginResponse response = LoginResponse.newBuilder()
+                                .setSuccesso(true)
+                                .setMessaggio("Registrazione completata con successo")
+                                .setCliente(clienteDTO)
+                                .build();
+
+                        responseObserver.onNext(response);
+                        responseObserver.onCompleted();
+
+                        logger.info("Nuovo cliente registrato e autenticato: " + email);
+                    } else {
+                        inviaRispostaLoginErrore(responseObserver, "Errore durante la registrazione");
+                        logger.severe("Errore nel salvataggio nuovo cliente: " + email);
+                    }
+
+                } catch (IllegalArgumentException e) {
+                    inviaRispostaLoginErrore(responseObserver, "Dati non validi: " + e.getMessage());
+                    logger.warning("Dati non validi per nuovo cliente: " + e.getMessage());
+                }
+            }
+
+        } catch (Exception e) {
+            logger.severe("Errore durante il login: " + e.getMessage());
+            e.printStackTrace();
+            inviaRispostaLoginErrore(responseObserver, "Errore interno del server");
+        }
+    }
+
+    private void inviaRispostaLoginErrore(StreamObserver<LoginResponse> responseObserver, String messaggio) {
+        LoginResponse errorResponse = LoginResponse.newBuilder()
+                .setSuccesso(false)
+                .setMessaggio(messaggio)
+                .build();
+
+        responseObserver.onNext(errorResponse);
+        responseObserver.onCompleted();
+
+        logger.warning("Errore login: " + messaggio);
+    }
+
+    @Override
+    public void gestisciAbbonamento(GestisciAbbonamentoRequest request,
+                                    StreamObserver<GestisciAbbonamentoResponse> responseObserver) {
+        try {
+            String emailUtente = request.getEmailUtente();
+            boolean vuoleNotifiche = request.getNotifiche();
+
+            ClienteDAO clienteDAO = new ClienteDAO();
+            Optional<Cliente> clienteOpt = clienteDAO.findByEmail(emailUtente);
+            if (clienteOpt.isEmpty()) {
+                inviaRispostaAbbonamentoErrore(responseObserver, "Cliente non trovato");
+                return;
+            }
+
+            Cliente cliente = clienteOpt.get();
+            boolean statoAttuale = cliente.hasAbbonamentoFedelta();
+
+            String messaggio;
+            boolean nuovoStato;
+            boolean notificheAttive;
+
+            if (statoAttuale) {
+                cliente.disattivaAbbonamentoFedelta();
+                nuovoStato = false;
+                notificheAttive = false;
+                messaggio = "Abbonamento Fedeltà disattivato con successo";
+                logger.info("Abbonamento disattivato per: " + emailUtente);
+
+            } else {
+                cliente.attivaAbbonamentoFedelta();
+                if (vuoleNotifiche) {
+                    cliente.attivaNotifichePromozioni();
+                    notificheAttive = true;
+                    messaggio = "Abbonamento Fedeltà attivato con successo! Riceverai notifiche esclusive.";
+                } else {
+                    cliente.disattivaNotifichePromozioni();
+                    notificheAttive = false;
+                    messaggio = "Abbonamento Fedeltà attivato con successo! Non riceverai notifiche.";
+                }
+
+                nuovoStato = true;
+                logger.info("Abbonamento attivato per: " + emailUtente +
+                        " - Con notifiche: " + vuoleNotifiche);
+            }
+
+            boolean aggiornato = clienteDAO.update(cliente);
+
+            if (aggiornato) {
+                GestisciAbbonamentoResponse response = GestisciAbbonamentoResponse.newBuilder()
+                        .setSuccesso(true)
+                        .setMessaggio(messaggio)
+                        .setNuovoStatoAbbonamento(nuovoStato)
+                        .setNotificheAttive(notificheAttive)
+                        .build();
+
+                responseObserver.onNext(response);
+                responseObserver.onCompleted();
+
+                logger.info("Gestione abbonamento completata per: " + emailUtente +
+                        " - Nuovo stato: " + nuovoStato + ", Notifiche: " + notificheAttive);
+
+            } else {
+                inviaRispostaAbbonamentoErrore(responseObserver,
+                        "Errore durante l'aggiornamento del profilo");
+            }
+
+        } catch (Exception e) {
+            logger.severe("Errore nella gestione abbonamento: " + e.getMessage());
+            e.printStackTrace();
+            inviaRispostaAbbonamentoErrore(responseObserver, "Errore interno del server");
+        }
+    }
+
+    private void inviaRispostaAbbonamentoErrore(StreamObserver<GestisciAbbonamentoResponse> responseObserver,
+                                                String messaggio) {
+        GestisciAbbonamentoResponse errorResponse = GestisciAbbonamentoResponse.newBuilder()
+                .setSuccesso(false)
+                .setMessaggio(messaggio)
+                .setNuovoStatoAbbonamento(false)
+                .setNotificheAttive(false)
+                .build();
+
+        responseObserver.onNext(errorResponse);
+        responseObserver.onCompleted();
+
+        logger.warning("Errore gestione abbonamento: " + messaggio);
     }
 }

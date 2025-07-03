@@ -5,6 +5,7 @@ import it.trenical.client.carrello.GestoreCarrello;
 import it.trenical.client.command.*;
 import it.trenical.client.proxy.ControllerTrenical;
 import it.trenical.grpc.BigliettoDTO;
+import it.trenical.grpc.ClienteDTO;
 import it.trenical.grpc.ViaggioDTO;
 import it.trenical.common.stazioni.Stazione;
 import javafx.application.Application;
@@ -22,10 +23,15 @@ import java.time.LocalDate;
 import java.util.*;
 
 public class ClientApp extends Application {
+    private Stage primaryStage;
 
-    private String nomeUtente = "Davide Iaquinta";
-    private String emailUtente = "giaq10@email.com";
-    private boolean abbonamentoFedelta = true;
+    private ClienteDTO cliente;
+    private String email;
+    private String nome;
+    private boolean abbonamentoFedelta;
+    private boolean notificheAttive;
+    private Label statoAbbonamentoLabel;
+    private Button abbonamentoButton;
 
     private TabPane mainTabPane;
     private VBox layoutCarrello;
@@ -36,14 +42,23 @@ public class ClientApp extends Application {
     private ListView<BigliettoDTO> bigliettiListView;
     private ControllerTrenical controllerTrenical;
 
+    public ClientApp(ClienteDTO cliente) {
+        this.cliente=cliente;
+        this.email = cliente.getEmail();
+        this.nome = cliente.getNome();
+        this.abbonamentoFedelta = cliente.getAbbonamentoFedelta();
+        this.notificheAttive = cliente.getNotificheAttive();
+    }
+
     @Override
     public void start(Stage primaryStage) {
+        this.primaryStage = primaryStage;
         System.out.println("Avvio GUI Cliente TreniCal...");
 
         VBox mainLayout = creaInterfacciaPrincipale();
         configuraVisualizazioneViaggi();
         Scene scene = new Scene(mainLayout, 1200, 800);
-        primaryStage.setTitle("TreniCal " + nomeUtente);
+        primaryStage.setTitle("TreniCal " + nome);
         primaryStage.setScene(scene);
         primaryStage.setResizable(true);
 
@@ -56,6 +71,10 @@ public class ClientApp extends Application {
         System.out.println("GUI Cliente avviata con successo!");
     }
 
+    public boolean abbonamentoCorrente() {
+        return abbonamentoFedelta;
+    }
+
     public void avviaPollingNotifiche() {
         timerNotifiche = new Timer();
         timerNotifiche.scheduleAtFixedRate(new TimerTask() {
@@ -63,7 +82,7 @@ public class ClientApp extends Application {
             public void run() {
                 try {
                     ControllerTrenical.RisultatoNotifichePendenti risultato =
-                            controllerTrenical.controllaNotifichePendenti(emailUtente);
+                            controllerTrenical.controllaNotifichePendenti(email);
 
                     if (risultato.ciSonoNotifiche()) {
                         Platform.runLater(() -> {
@@ -109,18 +128,17 @@ public class ClientApp extends Application {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Label infoUtente = new Label( nomeUtente);
+        Label infoUtente = new Label( nome);
         infoUtente.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
-
-        Label badgeFedelta = new Label(abbonamentoFedelta ? "Fedeltà" : "");
-        badgeFedelta.setStyle("-fx-font-size: 12px; -fx-text-fill: gold; -fx-font-weight: bold;");
 
         Button logoutBtn = new Button("Logout");
         logoutBtn.setStyle("-fx-background-color: red; -fx-text-fill: white; -fx-font-weight: bold;");
         logoutBtn.setOnAction(e -> {
+            primaryStage.close();
+            new Login(controllerTrenical).show();
         });
 
-        header.getChildren().addAll(logoBox, spacer, infoUtente, badgeFedelta, logoutBtn);
+        header.getChildren().addAll(logoBox, spacer, infoUtente, logoutBtn);
         return header;
     }
 
@@ -392,7 +410,7 @@ public class ClientApp extends Application {
                     controllerTrenical,
                     this,
                     quantita,
-                    emailUtente,
+                    email,
                     viaggio
             );
 
@@ -431,7 +449,7 @@ public class ClientApp extends Application {
         Button caricaBigliettiBtn = new Button("Carica Biglietti");
         caricaBigliettiBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
         caricaBigliettiBtn.setOnAction(e -> {
-            Command caricaCommand = new VisualizzaBigliettiCommand(controllerTrenical, this, emailUtente);
+            Command caricaCommand = new VisualizzaBigliettiCommand(controllerTrenical, this, email);
             caricaCommand.execute();
         });
 
@@ -539,7 +557,7 @@ public class ClientApp extends Application {
         Button modificaClasseBtn = new Button("Modifica Classe");
         modificaClasseBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white; ");
         modificaClasseBtn.setOnAction(e -> {
-            Command modificaClasseCommand = new ModificaClasseCommand(controllerTrenical, this, biglietto, emailUtente);
+            Command modificaClasseCommand = new ModificaClasseCommand(controllerTrenical, this, biglietto, email);
             modificaClasseCommand.execute();
             dettaglioStage.close();
         });
@@ -547,7 +565,7 @@ public class ClientApp extends Application {
         Button modificaOrarioBtn = new Button("Modifica Orario");
         modificaOrarioBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
         modificaOrarioBtn.setOnAction(e -> {
-            Command modificaOrarioCommand = new ModificaOrarioCommand(controllerTrenical, this, biglietto, emailUtente);
+            Command modificaOrarioCommand = new ModificaOrarioCommand(controllerTrenical, this, biglietto, email);
             modificaOrarioCommand.execute();
             dettaglioStage.close();
         });
@@ -555,7 +573,7 @@ public class ClientApp extends Application {
         Button modificaDataBtn = new Button("Modifica Data");
         modificaDataBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
         modificaDataBtn.setOnAction(e -> {
-            Command modificaDataCommand = new ModificaDataCommand(controllerTrenical, this, biglietto, emailUtente);
+            Command modificaDataCommand = new ModificaDataCommand(controllerTrenical, this, biglietto, email);
             modificaDataCommand.execute();
             dettaglioStage.close();
         });
@@ -902,7 +920,7 @@ public class ClientApp extends Application {
                     items,
                     nominativi,
                     pagamentoCombo.getValue(),
-                    emailUtente
+                    email
             );
 
             command.execute();
@@ -938,11 +956,11 @@ public class ClientApp extends Application {
         profiloGrid.setVgap(10);
 
         Label nomeLabel = new Label("Nome:");
-        TextField nomeField = new TextField(nomeUtente);
+        TextField nomeField = new TextField(nome);
         nomeField.setEditable(false);
 
         Label emailLabel = new Label("Email:");
-        TextField emailField = new TextField(emailUtente);
+        TextField emailField = new TextField(email);
         emailField.setEditable(false);
 
         profiloGrid.add(nomeLabel, 0, 0);
@@ -950,19 +968,68 @@ public class ClientApp extends Application {
         profiloGrid.add(emailLabel, 0, 1);
         profiloGrid.add(emailField, 1, 1);
 
-        HBox profiloActionsBox = new HBox(10);
-        profiloActionsBox.setAlignment(Pos.CENTER);
+        profiloBox.getChildren().addAll(profiloTitle, profiloGrid);
 
-        Button abbonatiBtn = new Button("Abbonati al Programma Fedeltà");
-        abbonatiBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
-        abbonatiBtn.setOnAction(e -> {
+        VBox abbonamentoBox = new VBox(15);
+        abbonamentoBox.setStyle("-fx-background-color: lightgray; -fx-padding: 20; -fx-background-radius: 8;");
+
+        Label abbonamentoTitle = new Label("Programma Fedeltà");
+        abbonamentoTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+
+        statoAbbonamentoLabel = new Label();
+        aggiornaLabelStato();
+        abbonamentoButton = new Button();
+        aggiornaTestoBottone();
+
+        abbonamentoButton.setOnAction(e -> {
+            AbbonamentoCommand command = new AbbonamentoCommand(
+                    controllerTrenical, this, email);
+            command.execute();
         });
 
-        profiloActionsBox.getChildren().addAll(abbonatiBtn);
+        abbonamentoBox.getChildren().addAll(
+                abbonamentoTitle,
+                statoAbbonamentoLabel,
+                abbonamentoButton
+        );
 
-        profiloBox.getChildren().addAll(profiloTitle, profiloGrid, profiloActionsBox);
-        layout.getChildren().addAll(title, profiloBox);
+        layout.getChildren().addAll(title, profiloBox, abbonamentoBox);
         return layout;
+    }
+
+    public void aggiornaStatoAbbonamento(boolean nuovoStatoAbbonamento, boolean notificheAttive) {
+        Platform.runLater(() -> {
+            this.abbonamentoFedelta = nuovoStatoAbbonamento;
+            this.notificheAttive = notificheAttive;
+            aggiornaLabelStato();
+
+            aggiornaTestoBottone();
+        });
+    }
+
+    private void aggiornaLabelStato() {
+        if (statoAbbonamentoLabel != null) {
+            if (abbonamentoFedelta) {
+                statoAbbonamentoLabel.setText("Abbonamento Fedeltà ATTIVO" +
+                        (notificheAttive ? " (con notifiche)" : " (senza notifiche)"));
+                statoAbbonamentoLabel.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+            } else {
+                statoAbbonamentoLabel.setText("Abbonamento Fedeltà NON ATTIVO");
+                statoAbbonamentoLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+            }
+        }
+    }
+
+    private void aggiornaTestoBottone() {
+        if (abbonamentoButton != null) {
+            if (abbonamentoFedelta) {
+                abbonamentoButton.setText("Disattiva Abbonamento Fedeltà");
+                abbonamentoButton.setStyle("-fx-background-color: red; -fx-text-fill: white; -fx-font-weight: bold;");
+            } else {
+                abbonamentoButton.setText("Attiva Abbonamento Fedeltà");
+                abbonamentoButton.setStyle("-fx-background-color: green; -fx-text-fill: white; -fx-font-weight: bold;");
+            }
+        }
     }
 
     public void mostraNotifica(String messaggio) {
