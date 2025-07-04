@@ -350,6 +350,37 @@ public class ControllerTrenical {
         }
     }
 
+    public RisultatoPromozioni visualizzaPromozioni(String emailUtente) {
+        logger.info("Richiesta visualizzazione promozioni per: " + emailUtente);
+
+        try {
+            if (emailUtente == null || emailUtente.trim().isEmpty()) {
+                return new RisultatoPromozioni(false, "Email utente obbligatoria", new ArrayList<>());
+            }
+
+            VisualizzaPromozioniRequest request = VisualizzaPromozioniRequest.newBuilder()
+                    .setEmailUtente(emailUtente)
+                    .build();
+
+            VisualizzaPromozioniResponse response = blockingStub.visualizzaPromozioni(request);
+
+            return new RisultatoPromozioni(
+                    response.getSuccesso(),
+                    response.getMessaggio(),
+                    response.getPromozioniList()
+            );
+
+        } catch (StatusRuntimeException e) {
+            logger.severe("Errore gRPC visualizzazione promozioni: " + e.getStatus());
+            String messaggio = "Errore di connessione al server";
+            return new RisultatoPromozioni(false, messaggio, new ArrayList<>());
+
+        } catch (Exception e) {
+            logger.severe("Errore imprevisto visualizzazione promozioni: " + e.getMessage());
+            return new RisultatoPromozioni(false, "Errore imprevisto: " + e.getMessage(), new ArrayList<>());
+        }
+    }
+
     public static class RisultatoRicerca {
         private final boolean successo;
         private final String messaggio;
@@ -507,5 +538,21 @@ public class ControllerTrenical {
         public String getMessaggio() { return messaggio; }
         public boolean isAbbonato() { return abbonato; }
         public boolean hasNotificheAttive() { return notificheAttive; }
+    }
+
+    public static class RisultatoPromozioni {
+        private final boolean successo;
+        private final String messaggio;
+        private final List<PromozioneDTO> promozioni;
+
+        public RisultatoPromozioni(boolean successo, String messaggio, List<PromozioneDTO> promozioni) {
+            this.successo = successo;
+            this.messaggio = messaggio;
+            this.promozioni = promozioni != null ? promozioni : new ArrayList<>();
+        }
+
+        public boolean isSuccesso() { return successo; }
+        public String getMessaggio() { return messaggio; }
+        public List<PromozioneDTO> getPromozioni() { return promozioni; }
     }
 }

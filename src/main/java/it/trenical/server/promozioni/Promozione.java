@@ -16,6 +16,15 @@ public abstract class Promozione {
         this.id = generaId(nome, sconto);
     }
 
+    public Promozione(String id, String nome, double sconto) {
+        if (id == null || id.trim().isEmpty()) throw new IllegalArgumentException("ID promozione obbligatorio");
+        if (nome == null || nome.trim().isEmpty()) throw new IllegalArgumentException("Nome promozione obbligatorio");
+        if (sconto <= 0 || sconto > 100) throw new IllegalArgumentException("Percentuale sconto deve essere tra 0 e 100");
+        this.id = id;
+        this.nome = nome;
+        this.sconto = sconto;
+    }
+
     private String generaId(String nome, double sconto) {
         String input = nome + "_" + sconto;
         int hash = Math.abs(input.hashCode());

@@ -16,6 +16,7 @@ service TrenicalService {
   rpc ControllaNotifichePendenti(ControllaNotificheRequest) returns (ControllaNotificheResponse);
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc GestisciAbbonamento(GestisciAbbonamentoRequest) returns (GestisciAbbonamentoResponse);
+  rpc VisualizzaPromozioni(VisualizzaPromozioniRequest) returns (VisualizzaPromozioniResponse);
 }
 
 message RicercaViaggioRequest {
@@ -186,4 +187,22 @@ message GestisciAbbonamentoResponse {
   string messaggio = 2;
   bool nuovo_stato_abbonamento = 3;
   bool notifiche_attive = 4;
+}
+
+message VisualizzaPromozioniRequest{
+  string email_utente = 1;
+}
+
+message VisualizzaPromozioniResponse{
+  bool successo = 1;
+  string messaggio = 2;
+  repeated PromozioneDTO promozioni = 3;
+}
+
+message PromozioneDTO {
+  string id = 1;
+  string nome = 2;
+  string tipo = 3;
+  double percentuale_sconto = 4;
+  string descrizione = 5;
 }

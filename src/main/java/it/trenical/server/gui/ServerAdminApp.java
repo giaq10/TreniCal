@@ -344,13 +344,10 @@ public class ServerAdminApp extends Application {
         grid.setStyle("-fx-background-color: #2c3e50; -fx-background-radius: 10;");
 
         VBox creazioneBox = creaSezioneCreazionePromozioni();
-        grid.add(creazioneBox, 0, 0);
-
-        VBox applicazioneBox = creaSezioneApplicazionePromozioni();
-        grid.add(applicazioneBox, 1, 0);
+        grid.add(creazioneBox, 0, 0);;
 
         VBox eliminazioneBox = creaEliminaPromozioni();
-        grid.add(eliminazioneBox, 2, 0);
+        grid.add(eliminazioneBox, 1, 0);
 
         layout.getChildren().addAll(title, grid);
         return layout;
@@ -395,37 +392,6 @@ public class ServerAdminApp extends Application {
         });
 
         box.getChildren().addAll(title, nomeField, tipoPromo, scontoField, creaBtn);
-        return box;
-    }
-
-    private VBox creaSezioneApplicazionePromozioni() {
-        VBox box = new VBox(10);
-        box.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8;");
-
-        Label title = new Label("Applica Promozioni");
-        title.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
-
-        TextField promozioneIdField = new TextField();
-        promozioneIdField.setPromptText("ID Promozione");
-
-        TextField viaggioIdField = new TextField();
-        viaggioIdField.setPromptText("ID Viaggio");
-
-        Button applicaBtn = new Button("Applica Promozione");
-        applicaBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
-        applicaBtn.setOnAction(e -> {
-            String promozioneId = promozioneIdField.getText().trim();
-            String viaggioId = viaggioIdField.getText().trim();
-
-
-
-            adminPromozioni.applicaPromozioneAViaggio(promozioneId, viaggioId);
-
-            promozioneIdField.clear();
-            viaggioIdField.clear();
-        });
-
-        box.getChildren().addAll(title, promozioneIdField, viaggioIdField, applicaBtn);
         return box;
     }
 

@@ -7,6 +7,7 @@ import it.trenical.client.proxy.ControllerTrenical;
 import it.trenical.grpc.BigliettoDTO;
 import it.trenical.grpc.ClienteDTO;
 import it.trenical.grpc.ViaggioDTO;
+import it.trenical.grpc.PromozioneDTO;
 import it.trenical.common.stazioni.Stazione;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -149,6 +150,9 @@ public class ClientApp extends Application {
         Tab ricercaTab = new Tab("Ricerca Viaggi");
         ricercaTab.setContent(creaTabRicercaViaggi());
 
+        Tab promozioniTab = new Tab("Promozioni");
+        promozioniTab.setContent(creaTabPromozioni());
+
         Tab bigliettiTab = new Tab("I Miei Biglietti");
         bigliettiTab.setContent(creaTabBiglietti());
 
@@ -158,7 +162,7 @@ public class ClientApp extends Application {
         Tab profiloTab = new Tab("Profilo");
         profiloTab.setContent(creaTabProfilo());
 
-        tabPane.getTabs().addAll(ricercaTab, bigliettiTab, carrelloTab, profiloTab);
+        tabPane.getTabs().addAll(ricercaTab, promozioniTab, bigliettiTab, carrelloTab, profiloTab);
 
         tabPane.getSelectionModel().select(0);
 
@@ -432,6 +436,39 @@ public class ClientApp extends Application {
         dettaglioStage.setScene(dettaglioScene);
         dettaglioStage.setResizable(false);
         dettaglioStage.show();
+    }
+
+    private VBox creaTabPromozioni() {
+        VBox layout = new VBox(15);
+        layout.setPadding(new Insets(20));
+
+        Label title = new Label("Promozioni Disponibili");
+        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+
+        VBox promoBox = new VBox(10);
+        promoBox.setStyle("-fx-background-color: lightgray; -fx-padding: 15; -fx-background-radius: 8;");
+
+        Label promoTitle = new Label("Elenco Promozioni Disponibili");
+        promoTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+
+        TextArea promozioniTextArea = new TextArea();
+        promozioniTextArea.setPrefHeight(400);
+        promozioniTextArea.setPrefWidth(700);
+        promozioniTextArea.setEditable(false);
+        promozioniTextArea.setWrapText(true);
+        promozioniTextArea.setStyle("-fx-font-family: 'Courier New'; -fx-font-size: 11px;");
+        promozioniTextArea.setText("Nessuna promozione caricata. Clicca 'Carica Promozioni' per iniziare.");
+
+        Button caricaBtn = new Button("Carica Promozioni");
+        caricaBtn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
+        caricaBtn.setOnAction(e -> {
+            Command command = new VisualizzaPromozioniCommand(controllerTrenical, this, email, promozioniTextArea);
+            command.execute();
+        });
+
+        promoBox.getChildren().addAll(promoTitle, promozioniTextArea, caricaBtn);
+        layout.getChildren().addAll(title, promoBox);
+        return layout;
     }
 
     private VBox creaTabBiglietti() {

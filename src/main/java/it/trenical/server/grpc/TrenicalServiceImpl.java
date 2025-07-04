@@ -7,8 +7,10 @@ import it.trenical.grpc.*;
 import it.trenical.common.stazioni.Stazione;
 import it.trenical.server.db.dao.BigliettoDAO;
 import it.trenical.server.db.dao.ClienteDAO;
+import it.trenical.server.db.dao.PromozioneDAO;
 import it.trenical.server.db.dao.ViaggioDAO;
 import it.trenical.server.gui.AdminViaggi;
+import it.trenical.server.promozioni.Promozione;
 import it.trenical.server.viaggi.Viaggio;
 
 import java.time.LocalDate;
@@ -811,5 +813,85 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
         responseObserver.onCompleted();
 
         logger.warning("Errore gestione abbonamento: " + messaggio);
+    }
+
+    @Override
+    public void visualizzaPromozioni(VisualizzaPromozioniRequest request,
+                                     StreamObserver<VisualizzaPromozioniResponse> responseObserver) {
+        try {
+            String emailUtente = request.getEmailUtente();
+            logger.info("Richiesta visualizzazione promozioni per: " + emailUtente);
+
+            ClienteDAO clienteDAO = new ClienteDAO();
+            Optional<Cliente> clienteOpt = clienteDAO.findByEmail(emailUtente);
+            if (clienteOpt.isEmpty()) {
+                inviaRispostaPromozioniErrore(responseObserver, "Cliente non trovato");
+                return;
+            }
+
+            Cliente cliente = clienteOpt.get();
+            boolean isAbbonato = cliente.hasAbbonamentoFedelta();
+
+            PromozioneDAO promozioneDAO = new PromozioneDAO();
+            List<Promozione> promozioni;
+
+            if (isAbbonato) {
+                promozioni = promozioneDAO.findAll();
+                logger.info("Cliente abbonato - recuperate tutte le promozioni");
+            } else {
+                promozioni = promozioneDAO.findByTipo("Standard");
+                logger.info("Cliente non abbonato - recuperate solo promozioni Standard");
+            }
+
+            List<PromozioneDTO> promozioniDTO = new ArrayList<>();
+            for (Promozione promozione : promozioni) {
+                PromozioneDTO dto = convertiPromozioneInDTO(promozione);
+                promozioniDTO.add(dto);
+            }
+
+            String messaggio;
+            if (promozioniDTO.isEmpty()) {
+                messaggio = "Nessuna promozione disponibile al momento";
+            } else {
+                messaggio = String.format("Trovate %d promozioni disponibili%s",
+                        promozioniDTO.size(),
+                        isAbbonato ? " (incluse offerte Fedeltà)" : "");
+            }
+
+            VisualizzaPromozioniResponse response = VisualizzaPromozioniResponse.newBuilder()
+                    .setSuccesso(true)
+                    .setMessaggio(messaggio)
+                    .addAllPromozioni(promozioniDTO)
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            logger.severe("Errore durante visualizzazione promozioni: " + e.getMessage());
+            e.printStackTrace();
+            inviaRispostaPromozioniErrore(responseObserver, "Errore interno del server");
+        }
+    }
+
+    private PromozioneDTO convertiPromozioneInDTO(Promozione promozione) {
+        return PromozioneDTO.newBuilder()
+                .setId(promozione.getId())
+                .setNome(promozione.getNome())
+                .setTipo(promozione.getTipo())
+                .setPercentualeSconto(promozione.getSconto())
+                .build();
+    }
+
+    private void inviaRispostaPromozioniErrore(StreamObserver<VisualizzaPromozioniResponse> responseObserver,
+                                               String messaggio) {
+        VisualizzaPromozioniResponse errorResponse = VisualizzaPromozioniResponse.newBuilder()
+                .setSuccesso(false)
+                .setMessaggio(messaggio)
+                .build();
+
+        responseObserver.onNext(errorResponse);
+        responseObserver.onCompleted();
+
+        logger.warning("Errore visualizzazione promozioni: " + messaggio);
     }
 }
