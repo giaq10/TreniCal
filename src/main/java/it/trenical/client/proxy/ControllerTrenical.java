@@ -117,7 +117,8 @@ public class ControllerTrenical {
     public RisultatoAcquisto confermaAcquisto(List<CarrelloItem> carrelloItems,
                                               List<String> nominativi,
                                               String modalitaPagamento,
-                                              String emailUtente) {
+                                              String emailUtente,
+                                              String codicePromozione) {
         try {
             List<CarrelloItemDTO> itemsDTO = new ArrayList<>();
             for (CarrelloItem item : carrelloItems) {
@@ -129,12 +130,15 @@ public class ControllerTrenical {
                 itemsDTO.add(dto);
             }
 
-            ConfermaAcquistoRequest request = ConfermaAcquistoRequest.newBuilder()
+            ConfermaAcquistoRequest.Builder requestBuilder = ConfermaAcquistoRequest.newBuilder()
                     .setEmailUtente(emailUtente)
                     .addAllCarrelloItems(itemsDTO)
                     .addAllNominativi(nominativi)
-                    .setModalitaPagamento(modalitaPagamento)
-                    .build();
+                    .setModalitaPagamento(modalitaPagamento);
+            if (codicePromozione != null && !codicePromozione.trim().isEmpty()) {
+                requestBuilder.setCodicePromozione(codicePromozione.trim());
+            }
+            ConfermaAcquistoRequest request = requestBuilder.build();
 
             ConfermaAcquistoResponse response = blockingStub.confermaAcquisto(request);
 
@@ -142,13 +146,15 @@ public class ControllerTrenical {
                     response.getSuccesso(),
                     response.getMessaggio(),
                     response.getBigliettiAcquistati(),
-                    response.getPrezzoTotale()
+                    response.getPrezzoTotale(),
+                    response.getScontoApplicato(),
+                    response.getNomePromozione()
             );
 
         } catch (Exception e) {
             logger.severe("Errore conferma acquisto: " + e.getMessage());
             e.printStackTrace();
-            return new RisultatoAcquisto(false, "Errore: " + e.getMessage(), 0, 0.0);
+            return new RisultatoAcquisto(false, "Errore: " + e.getMessage(), 0, 0.0, 0.0, null);
         }
     }
 
@@ -422,18 +428,25 @@ public class ControllerTrenical {
         private final String messaggio;
         private final int bigliettiAcquistati;
         private final double prezzoTotale;
+        private final double scontoApplicato;
+        private final String nomePromozione;
 
-        public RisultatoAcquisto(boolean successo, String messaggio, int biglietti, double prezzo) {
+        public RisultatoAcquisto(boolean successo, String messaggio, int biglietti, double prezzo,
+                                 double scontoApplicato, String nomePromozione) {
             this.successo = successo;
             this.messaggio = messaggio;
             this.bigliettiAcquistati = biglietti;
             this.prezzoTotale = prezzo;
+            this.scontoApplicato = scontoApplicato;
+            this.nomePromozione = nomePromozione;
         }
 
         public boolean isSuccesso() { return successo; }
         public String getMessaggio() { return messaggio; }
         public int getBigliettiAcquistati() { return bigliettiAcquistati; }
         public double getPrezzoTotale() { return prezzoTotale; }
+        public double getScontoApplicato() { return scontoApplicato; }
+        public String getNomePromozione() { return nomePromozione; }
     }
 
     public static class RisultatoBiglietti {

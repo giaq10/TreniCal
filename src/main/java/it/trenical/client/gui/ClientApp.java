@@ -928,6 +928,19 @@ public class ClientApp extends Application {
         HBox buttonsBox = new HBox(10);
         buttonsBox.setAlignment(Pos.CENTER);
 
+        HBox promozioneBox = new HBox(10);
+        promozioneBox.setAlignment(Pos.CENTER_LEFT);
+
+        Label promozioneLabel = new Label("Codice promozione (opzionale):");
+        promozioneLabel.setStyle("-fx-font-weight: bold;");
+
+        TextField codicePromozioneField = new TextField();
+        codicePromozioneField.setPromptText("Inserisci codice promozionale...");
+        codicePromozioneField.setPrefWidth(200);
+
+        VBox promozioneVBox = new VBox(3);
+        promozioneVBox.getChildren().addAll(new HBox(10, promozioneLabel, codicePromozioneField));
+
         Button annullaBtn = new Button("Annulla");
         annullaBtn.setStyle("-fx-background-color: red; -fx-text-fill: white; -fx-pref-width: 100;");
         annullaBtn.setOnAction(e -> resocontoStage.close());
@@ -951,13 +964,18 @@ public class ClientApp extends Application {
                 mostraErrore("Errore", "Inserisci tutti i nominativi richiesti");
                 return;
             }
+            String codicePromozione = codicePromozioneField.getText().trim();
+            if (codicePromozione.isEmpty()) {
+                codicePromozione = null;
+            }
             ConfermaAcquistoCommand command = new ConfermaAcquistoCommand(
                     controllerTrenical,
                     this,
                     items,
                     nominativi,
                     pagamentoCombo.getValue(),
-                    email
+                    email,
+                    codicePromozione
             );
 
             command.execute();
@@ -968,7 +986,7 @@ public class ClientApp extends Application {
 
         mainLayout.getChildren().addAll(titleLabel, infoBox,
                 new Label("Nominativi:"), scrollPane,
-                pagamentoBox, buttonsBox);
+                promozioneVBox, pagamentoBox, buttonsBox);
 
         Scene scene = new Scene(mainLayout, 500, 500);
         resocontoStage.setScene(scene);

@@ -33,8 +33,8 @@ public class BigliettoDAO {
         }
 
         String sql = """
-            INSERT INTO biglietti (id, cliente_email, viaggio_id, nominativo, data_acquisto) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO biglietti (id, cliente_email, viaggio_id, nominativo, prezzo, data_acquisto) 
+            VALUES (?, ?, ?, ?, ?, ?)
             """;
 
         try (Connection conn = dbManager.getConnection();
@@ -44,9 +44,10 @@ public class BigliettoDAO {
             stmt.setString(2, clienteEmail);
             stmt.setString(3, biglietto.getIdViaggio());
             stmt.setString(4, biglietto.getNominativo());
+            stmt.setDouble(5, biglietto.getPrezzo());
 
             Timestamp timestamp = Timestamp.valueOf(biglietto.getDataAcquisto());
-            stmt.setTimestamp(5, timestamp);
+            stmt.setTimestamp(6, timestamp);
 
             int rowsAffected = stmt.executeUpdate();
 
@@ -87,7 +88,7 @@ public class BigliettoDAO {
         List<BigliettoDatabase> bigliettiDatabase = new ArrayList<>();
 
         String sql = """
-                    SELECT id, nominativo, viaggio_id, data_acquisto 
+                    SELECT id, nominativo, viaggio_id, data_acquisto, prezzo
                     FROM biglietti 
                     WHERE cliente_email = ? 
                     """;
@@ -102,6 +103,7 @@ public class BigliettoDAO {
                         rs.getString("id"),
                         rs.getString("nominativo"),
                         rs.getString("viaggio_id"),
+                        rs.getDouble("prezzo"),
                         rs.getTimestamp("data_acquisto").toLocalDateTime()
                 );
                 bigliettiDatabase.add(data);
@@ -118,7 +120,7 @@ public class BigliettoDAO {
                 Optional<Viaggio> viaggioOpt = viaggioDAO.findById(data.viaggioId);
 
                 Viaggio viaggio = viaggioOpt.get();
-                Biglietto biglietto = new Biglietto(viaggio, data.id, data.nominativo, data.dataAcquisto);
+                Biglietto biglietto = new Biglietto(viaggio, data.id, data.nominativo, data.prezzo, data.dataAcquisto);
                 biglietti.add(biglietto);
 
             } catch (Exception e) {
@@ -129,6 +131,22 @@ public class BigliettoDAO {
 
         logger.info("Trovati " + biglietti.size() + " biglietti per cliente " + clienteEmail);
         return biglietti;
+    }
+
+    private static class BigliettoDatabase {
+        final String id;
+        final String nominativo;
+        final String viaggioId;
+        final double prezzo;
+        final LocalDateTime dataAcquisto;
+
+        BigliettoDatabase(String id, String nominativo, String viaggioId, double prezzo, LocalDateTime dataAcquisto) {
+            this.id = id;
+            this.nominativo = nominativo;
+            this.viaggioId = viaggioId;
+            this.prezzo = prezzo;
+            this.dataAcquisto = dataAcquisto;
+        }
     }
 
     public List<String> findEmailClientiByViaggioId(String viaggioId) {
@@ -162,72 +180,22 @@ public class BigliettoDAO {
         return emailClienti;
     }
 
-    private static class BigliettoDatabase {
-        final String id;
-        final String nominativo;
-        final String viaggioId;
-        final LocalDateTime dataAcquisto;
-
-        BigliettoDatabase(String id, String nominativo, String viaggioId, LocalDateTime dataAcquisto) {
-            this.id = id;
-            this.nominativo = nominativo;
-            this.viaggioId = viaggioId;
-            this.dataAcquisto = dataAcquisto;
-        }
-    }
-
-    public int deleteByClienteEmail(String clienteEmail) {
-        String sql = "DELETE FROM biglietti WHERE cliente_email = ?";
-
-        try (Connection conn = dbManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, clienteEmail);
-            int rowsAffected = stmt.executeUpdate();
-
-            logger.info("Eliminati " + rowsAffected + " biglietti per cliente " + clienteEmail);
-            return rowsAffected;
-
-        } catch (SQLException e) {
-            logger.severe("Errore nell'eliminazione biglietti cliente: " + e.getMessage());
-        }
-
-        return 0;
-    }
-
-    public boolean exists(String id) {
-        String sql = "SELECT COUNT(*) FROM biglietti WHERE id = ?";
-
-        try (Connection conn = dbManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, id);
-            ResultSet rs = stmt.executeQuery();
-
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
-            }
-
-        } catch (SQLException e) {
-            logger.severe("Errore nella verifica esistenza biglietto: " + e.getMessage());
-        }
-
-        return false;
-    }
-
-    public boolean updateViaggioId(String bigliettoId, String nuovoViaggioId) {
-        String sql = "UPDATE biglietti SET viaggio_id = ? WHERE id = ?";
+    public boolean updateViaggioIdEPrezzo(String bigliettoId, String nuovoViaggioId, double nuovoPrezzo) {
+        String sql = "UPDATE biglietti SET viaggio_id = ?, prezzo = ? WHERE id = ?";
 
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, nuovoViaggioId);
-            stmt.setString(2, bigliettoId);
+            stmt.setDouble(2, nuovoPrezzo);
+            stmt.setString(3, bigliettoId);
 
             int rowsAffected = stmt.executeUpdate();
 
             if (rowsAffected > 0) {
-                logger.info("Biglietto aggiornato: " + bigliettoId + " -> nuovo viaggio: " + nuovoViaggioId);
+                logger.info("Biglietto aggiornato: " + bigliettoId +
+                        " -> nuovo viaggio: " + nuovoViaggioId +
+                        ", nuovo prezzo: €" + nuovoPrezzo);
                 return true;
             } else {
                 logger.warning("Nessun biglietto trovato con ID: " + bigliettoId);

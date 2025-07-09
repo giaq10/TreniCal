@@ -16,6 +16,7 @@ public class Biglietto implements Cloneable {
     private String id;
     private final Viaggio viaggio;
     private String nominativo;
+    private double prezzo;
     private final LocalDateTime dataAcquisto;
 
     public Biglietto(Viaggio viaggio) {
@@ -28,13 +29,15 @@ public class Biglietto implements Cloneable {
         this.viaggio = viaggio;
         this.dataAcquisto = LocalDateTime.now();
         this.id = generaIdBiglietto();
+        this.prezzo = viaggio.getPrezzo();
     }
 
-    public Biglietto(Viaggio viaggio, String id, String nominativo, LocalDateTime dataAcquisto) {
+    public Biglietto(Viaggio viaggio, String id, String nominativo, double prezzo, LocalDateTime dataAcquisto) {
         this.viaggio = viaggio;
         this.id = id;
         this.nominativo = nominativo;
         this.dataAcquisto = dataAcquisto;
+        this.prezzo = prezzo;
     }
 
     private String generaIdBiglietto() {
@@ -99,7 +102,7 @@ public class Biglietto implements Cloneable {
     public LocalTime getOrarioPartenzaEffettivo() { return viaggio.getOrarioPartenzaEffettivo(); }
     public LocalTime getOrarioArrivoEffettivo() { return viaggio.getOrarioArrivoEffettivo(); }
     public Binario getBinarioPartenza() { return viaggio.getBinarioPartenza(); }
-    public double getPrezzo() { return viaggio.getPrezzo(); }
+    public double getPrezzo() { return prezzo; }
     public int getDurataMinuti() { return viaggio.getDurataMinuti(); }
     public String getDurataFormattata() { return viaggio.getDurataFormattata(); }
 

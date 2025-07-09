@@ -240,6 +240,24 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
             List<CarrelloItemDTO> carrelloItems = request.getCarrelloItemsList();
             List<String> nominativi = request.getNominativiList();
             String modalitaPagamento = request.getModalitaPagamento();
+            String codicePromozione = request.getCodicePromozione();
+
+            Promozione promozioneApplicata = null;
+
+            if (codicePromozione != null && !codicePromozione.trim().isEmpty()) {
+                logger.info("Codice promozione fornito: " + codicePromozione.trim());
+
+                PromozioneDAO promozioneDAO = new PromozioneDAO();
+                Optional<Promozione> promozioneOpt = promozioneDAO.findById(codicePromozione.trim());
+
+                if (promozioneOpt.isPresent()) {
+                    promozioneApplicata = promozioneOpt.get();
+                } else {
+                    inviaRispostaAcquistoErrore(responseObserver,
+                            "Codice promozione '" + codicePromozione.trim() + "' non valido");
+                    return;
+                }
+            }
 
             List<Biglietto> bigliettiCreati = new ArrayList<>();
             double prezzoTotale = 0;
@@ -253,17 +271,21 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
                 }
 
                 Viaggio viaggio = viaggioOpt.get();
+                if (promozioneApplicata != null) {
+                    viaggio.applicaPromozione(promozioneApplicata);
+                }
+                double prezzoViaggioScontato = viaggio.getPrezzo();
 
                 Biglietto bigliettoBase = new Biglietto(viaggio);
                 bigliettoBase.setNominativo(nominativi.get(indiceNominativo++));
                 bigliettiCreati.add(bigliettoBase);
-                prezzoTotale += viaggio.getPrezzo();
+                prezzoTotale += prezzoViaggioScontato;
 
                 for (int i = 1; i < item.getQuantita(); i++) { //prototype
                     Biglietto clone = bigliettoBase.clone();
                     clone.setNominativo(nominativi.get(indiceNominativo++));
                     bigliettiCreati.add(clone);
-                    prezzoTotale += viaggio.getPrezzo();
+                    prezzoTotale += prezzoViaggioScontato;
                 }
             }
 
@@ -280,6 +302,8 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
                     .setMessaggio("Acquisto completato " + bigliettSalvati + " biglietti acquistati.")
                     .setBigliettiAcquistati(bigliettSalvati)
                     .setPrezzoTotale(prezzoTotale)
+                    .setScontoApplicato((promozioneApplicata!=null) ? promozioneApplicata.getSconto() : 0)
+                    .setNomePromozione((promozioneApplicata!=null) ? promozioneApplicata.getNome() : "Nessuna")
                     .build();
 
             responseObserver.onNext(response);
@@ -452,7 +476,15 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
                 return;
             }
 
-            boolean bigliettoAggiornato = bigliettoDAO.updateViaggioId(request.getIdBiglietto(), request.getNuovoIdViaggio());
+            double prezzoPrecedente = bigliettoCorrente.getPrezzo();
+            double prezzoNuovo = nuovoViaggio.getPrezzo();
+            double differenzaPrezzo = prezzoNuovo - prezzoPrecedente;
+
+            boolean bigliettoAggiornato = bigliettoDAO.updateViaggioIdEPrezzo(
+                    request.getIdBiglietto(),
+                    request.getNuovoIdViaggio(),
+                    prezzoNuovo
+            );
 
             if (!bigliettoAggiornato) {
                 viaggioDAO.updatePostiDisponibili(request.getNuovoIdViaggio(), nuovoViaggio.getPostiDisponibili());
@@ -464,13 +496,10 @@ public class TrenicalServiceImpl extends TrenicalServiceGrpc.TrenicalServiceImpl
                 return;
             }
 
-            double prezzoPrecedente = bigliettoCorrente.getPrezzo();
-            double prezzoNuovo = nuovoViaggio.getPrezzo();
-            double differenzaPrezzo = prezzoNuovo - prezzoPrecedente;
-
             Biglietto bigliettoModificato = new Biglietto(nuovoViaggio,
                     bigliettoCorrente.getId(),
                     bigliettoCorrente.getNominativo(),
+                    prezzoNuovo,
                     bigliettoCorrente.getDataAcquisto());
 
             BigliettoDTO bigliettoDTO = convertiBigliettoADTO(bigliettoModificato);

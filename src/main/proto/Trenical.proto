@@ -83,6 +83,7 @@ message ConfermaAcquistoRequest {
   repeated CarrelloItemDTO carrello_items = 2;
   repeated string nominativi = 3;
   string modalita_pagamento = 4;
+  string codice_promozione = 5;
 }
 
 message AcquistoBiglietto {
@@ -96,6 +97,8 @@ message ConfermaAcquistoResponse {
   string messaggio = 2;
   int32 biglietti_acquistati = 3;
   double prezzo_totale = 4;
+  double sconto_applicato = 5;
+  string nome_promozione = 6;
 }
 
 message VisualizzaBigliettiRequest {
