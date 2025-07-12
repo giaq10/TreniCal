@@ -1,4 +1,4 @@
-package it.trenical.common.stazioni;
+package it.trenical.server.stazioni;
 
 public enum Binario {
     BINARIO_1(1, "Binario 1"),

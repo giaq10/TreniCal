@@ -11,7 +11,7 @@ public class CalcoloViaggioEconomy implements CalcoloViaggioStrategy {
     public int calcolaDurata(int distanzaKm, TipoTreno tipoTreno) {
         // Il tipo treno viene passato ma per Economy usiamo sempre la velocità base
         double durataOre = distanzaKm / VELOCITA_BASE_KMH;
-        double variazione = 1.0 + ((Math.random() * 0.2) - 0.1); // ±10% variazione
+        double variazione = 1.0 + ((Math.random() * 0.2) - 0.1);
         return (int) Math.round(durataOre * variazione * 60);
     }
 
@@ -19,7 +19,7 @@ public class CalcoloViaggioEconomy implements CalcoloViaggioStrategy {
     public double calcolaPrezzo(int distanzaKm, TipoTreno tipoTreno) {
         // Prezzo base per Economy
         double prezzoBase = distanzaKm * PREZZO_BASE_PER_KM;
-        double variazione = 1.0 + ((Math.random() * 0.3) - 0.15); // ±15% variazione
+        double variazione = 1.0 + ((Math.random() * 0.3) - 0.15);
         return Math.round(prezzoBase * variazione * 100.0) / 100.0;
     }
 }

@@ -1,18 +1,18 @@
 package it.trenical.server.gui;
 
+import it.trenical.server.cliente.Cliente;
+import it.trenical.server.db.dao.ClienteDAO;
 import it.trenical.server.promozioni.Promozione;
 import it.trenical.server.promozioni.factoryMethod.PromozioneFactory;
-import it.trenical.server.viaggi.StatoViaggio;
-import it.trenical.server.viaggi.Viaggio;
 import it.trenical.server.db.DatabaseManager;
 import it.trenical.server.db.dao.PromozioneDAO;
 import it.trenical.server.db.dao.ViaggioDAO;
+import it.trenical.server.grpc.TrenicalServiceImpl;
 
 import java.sql.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
-
 
 public class AdminPromozioni {
 
@@ -20,18 +20,22 @@ public class AdminPromozioni {
 
     private final PromozioneDAO promozioneDAO;
     private final ViaggioDAO viaggioDAO;
+    private final ClienteDAO clienteDAO;
     private final ServerAdminApp gui;
+    private final TrenicalServiceImpl trenicalService;
 
     public AdminPromozioni(PromozioneDAO promozioneDAO, ViaggioDAO viaggioDAO, ServerAdminApp gui) {
         this.promozioneDAO = promozioneDAO;
         this.viaggioDAO = viaggioDAO;
+        this.clienteDAO = new ClienteDAO();
         this.gui = gui;
+        this.trenicalService = new TrenicalServiceImpl();
 
         logger.info("AdminPromozioni inizializzato");
     }
 
     public void creaPromozione(String nome, String tipo, double percentualeSconto) {
-        logger.info("Crea promozione " + nome );
+        logger.info("Crea promozione " + nome);
         try {
             if (tipo == null) {
                 gui.mostraErrore("Errore Input", "Tipo promozione deve essere 'Standard' o 'Fedelta'");
@@ -53,15 +57,20 @@ public class AdminPromozioni {
             boolean salvata = promozioneDAO.save(nuovaPromozione);
             if (salvata) {
                 String messaggio = String.format(
-                                "ID: %s\n" +
-                                "Nome: %s\n" +
-                                "Tipo: %s\n" +
-                                "Sconto: %.1f%%\n\n" ,
+                        "ID: %s\n" +
+                        "Nome: %s\n" +
+                        "Tipo: %s\n" +
+                        "Sconto: %.1f%%\n\n",
                         nuovaPromozione.getId(),
                         nuovaPromozione.getNome(),
                         nuovaPromozione.getTipo(),
                         nuovaPromozione.getSconto()
                 );
+
+                if ("Fedelta".equals(nuovaPromozione.getTipo())) {
+                    notificaClientiPromozioneFedelta(nuovaPromozione);
+                }
+
                 gui.mostraSuccesso("Promozione Creata", messaggio);
                 logger.info("Promozione creata: " + nuovaPromozione);
             }
@@ -70,6 +79,36 @@ public class AdminPromozioni {
             logger.severe("Errore creazione promozione: " + e.getMessage());
             gui.mostraErrore("Errore Sistema",
                     "Errore durante la creazione della promozione: " + e.getMessage());
+        }
+    }
+
+    private void notificaClientiPromozioneFedelta(Promozione promozione) {
+        try {
+            logger.info("Invio notifiche per nuova promozione fedeltà: " + promozione.getNome());
+
+            List<Cliente> clientiFedelta = clienteDAO.findClientiFedeltaConNotificheAttive();
+            if (clientiFedelta.isEmpty()) {
+                logger.info("Nessun cliente fedeltà con notifiche attive trovato");
+                return;
+            }
+
+            String messaggioNotifica = String.format(
+                    "Nuova promozione per gli abbonati! '%s' - Sconto del %.1f%%.",
+                    promozione.getNome(),
+                    promozione.getSconto()
+            );
+
+            for (Cliente cliente : clientiFedelta) {
+                String notificaCompleta = cliente.getEmail() + "|" + messaggioNotifica;
+                AdminViaggi.aggiungiNotificaStatica(notificaCompleta);
+            }
+
+            logger.info("Notifiche promozione inviate a " + clientiFedelta.size() +
+                    " clienti fedeltà con notifiche attive");
+
+        } catch (Exception e) {
+            logger.severe("Errore nell'invio notifiche promozione: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -88,7 +127,7 @@ public class AdminPromozioni {
             boolean eliminata = promozioneDAO.delete(promozioneId);
             if (eliminata) {
                 String messaggio = String.format(
-                        "Promozione eliminata %s" ,promozione.getNome()
+                        "Promozione eliminata %s", promozione.getNome()
                 );
                 gui.mostraSuccesso("Promozione Eliminata", messaggio);
                 logger.info("Promozione eliminata definitivamente: " + promozione.getNome());

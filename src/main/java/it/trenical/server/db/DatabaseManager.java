@@ -17,11 +17,9 @@ public class DatabaseManager {
 
     private DatabaseManager() {
         try {
-            // Carica il driver SQLite
             Class.forName("org.sqlite.JDBC");
             this.connection = DriverManager.getConnection(DB_URL);
 
-            // Abilita foreign keys in SQLite
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute("PRAGMA foreign_keys = ON");
             }
@@ -33,9 +31,6 @@ public class DatabaseManager {
         }
     }
 
-    /**
-     * Ottiene l'istanza singleton del DatabaseManager
-     */
     public static synchronized DatabaseManager getInstance() {
         if (instance == null) {
             instance = new DatabaseManager();
@@ -48,12 +43,10 @@ public class DatabaseManager {
      */
     public Connection getConnection() {
         try {
-            // Verifica se la connessione è ancora valida
             if (connection == null || connection.isClosed()) {
                 logger.warning("Connessione chiusa, riconnessione in corso...");
                 this.connection = DriverManager.getConnection(DB_URL);
 
-                // Riabilita foreign keys
                 try (Statement stmt = connection.createStatement()) {
                     stmt.execute("PRAGMA foreign_keys = ON");
                 }
@@ -62,61 +55,6 @@ public class DatabaseManager {
         } catch (SQLException e) {
             logger.severe("Errore nel recupero della connessione: " + e.getMessage());
             throw new RuntimeException("Errore connessione database", e);
-        }
-    }
-
-    /**
-     * Chiude la connessione al database
-     */
-    public void closeConnection() {
-        try {
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
-                logger.info("Connessione al database chiusa");
-            }
-        } catch (SQLException e) {
-            logger.severe("Errore nella chiusura della connessione: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Esegue una query di test per verificare la connessione
-     */
-    public boolean testConnection() {
-        try (Statement stmt = getConnection().createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM clienti")) {
-
-            if (rs.next()) {
-                int count = rs.getInt(1);
-                logger.info("Test connessione riuscito. Clienti nel database: " + count);
-                return true;
-            }
-        } catch (SQLException e) {
-            logger.severe("Test connessione fallito: " + e.getMessage());
-        }
-        return false;
-    }
-
-    /**
-     * Esegue backup del database (opzionale)
-     */
-    public void backup(String backupPath) {
-        // Implementazione backup se necessaria
-        logger.info("Backup del database non implementato");
-    }
-
-    /**
-     * Ottiene metadati del database
-     */
-    public void printDatabaseInfo() {
-        try {
-            DatabaseMetaData metaData = getConnection().getMetaData();
-            logger.info("Database: " + metaData.getDatabaseProductName() +
-                    " v" + metaData.getDatabaseProductVersion());
-            logger.info("Driver: " + metaData.getDriverName() +
-                    " v" + metaData.getDriverVersion());
-        } catch (SQLException e) {
-            logger.warning("Impossibile ottenere metadati database: " + e.getMessage());
         }
     }
 }

@@ -1,6 +1,6 @@
 package it.trenical.server.tratte;
 
-import it.trenical.common.stazioni.Stazione;
+import it.trenical.server.stazioni.Stazione;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,9 +19,7 @@ public class TrattaUtil {
     public static List<Tratta> creaTutteLeTratte() {
         List<Tratta> tratte = new ArrayList<>();
         Stazione[] stazioni = Stazione.values();
-        // Per ogni stazione di partenza
         for (Stazione partenza : stazioni) {
-            // Per ogni possibile destinazione (esclusa la partenza stessa)
             for (Stazione arrivo : stazioni) {
                 if (!partenza.equals(arrivo)) {
                     tratte.add(new Tratta(partenza, arrivo));

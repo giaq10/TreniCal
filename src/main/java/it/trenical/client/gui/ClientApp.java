@@ -7,8 +7,7 @@ import it.trenical.client.proxy.ControllerTrenical;
 import it.trenical.grpc.BigliettoDTO;
 import it.trenical.grpc.ClienteDTO;
 import it.trenical.grpc.ViaggioDTO;
-import it.trenical.grpc.PromozioneDTO;
-import it.trenical.common.stazioni.Stazione;
+import it.trenical.server.stazioni.Stazione;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.*;
@@ -22,6 +21,10 @@ import javafx.stage.*;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 public class ClientApp extends Application {
     private Stage primaryStage;
@@ -37,7 +40,8 @@ public class ClientApp extends Application {
     private TabPane mainTabPane;
     private VBox layoutCarrello;
 
-    private Timer timerNotifiche;
+    private ScheduledExecutorService scheduledExecutor;
+    private Logger logger = Logger.getLogger(ClientApp.class.getName());
 
     private ListView<ViaggioDTO> viaggiListView;
     private ListView<BigliettoDTO> bigliettiListView;
@@ -77,25 +81,51 @@ public class ClientApp extends Application {
     }
 
     public void avviaPollingNotifiche() {
-        timerNotifiche = new Timer();
-        timerNotifiche.scheduleAtFixedRate(new TimerTask() {
+        if (scheduledExecutor != null && !scheduledExecutor.isShutdown()) {
+            return;
+        }
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+
+        Runnable pollingTask = new Runnable() {
             @Override
             public void run() {
                 try {
-                    ControllerTrenical.RisultatoNotifichePendenti risultato =
-                            controllerTrenical.controllaNotifichePendenti(email);
-
+                    ControllerTrenical.RisultatoNotifichePendenti risultato = controllerTrenical.controllaNotifichePendenti(email);
                     if (risultato.ciSonoNotifiche()) {
                         Platform.runLater(() -> {
                             mostraNotifica(risultato.getMessaggio());
                         });
+                    } else if (risultato.getMessaggio().equals("ferma polling")) {
+                        Platform.runLater(() -> {
+                            fermaPollingNotifiche();
+                        });
                     }
-
                 } catch (Exception e) {
-                    System.err.println("Errore polling notifiche: " + e.getMessage());
+                    logger.warning("Errore durante polling notifiche: " + e.getMessage());
                 }
             }
-        }, 10000, 10000);
+        };
+        scheduledExecutor.scheduleWithFixedDelay(pollingTask,1, 5,TimeUnit.SECONDS);
+        logger.info("Polling notifiche avviato per: " + email);
+    }
+
+    public void fermaPollingNotifiche() {
+        if (scheduledExecutor != null && !scheduledExecutor.isShutdown()) {
+            scheduledExecutor.shutdown();
+        }
+        logger.info("Polling notifiche fermato");
+
+        if(scheduledExecutor.isShutdown()){
+            ScheduledExecutorService riavvioExecutor = Executors.newSingleThreadScheduledExecutor();
+            logger.info("Riavvio del polling in 15 secondi");
+
+            riavvioExecutor.schedule(() -> {
+                Platform.runLater(() -> {
+                    avviaPollingNotifiche();
+                });
+                riavvioExecutor.shutdown();
+            }, 15, TimeUnit.SECONDS);
+        }
     }
 
     private VBox creaInterfacciaPrincipale() {

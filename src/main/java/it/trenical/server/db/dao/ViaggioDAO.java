@@ -1,7 +1,7 @@
 package it.trenical.server.db.dao;
 
-import it.trenical.common.stazioni.Stazione;
-import it.trenical.common.stazioni.Binario;
+import it.trenical.server.stazioni.Stazione;
+import it.trenical.server.stazioni.Binario;
 import it.trenical.server.viaggi.StatoViaggio;
 import it.trenical.server.viaggi.Viaggio;
 import it.trenical.server.treni.TipoTreno;
@@ -50,7 +50,6 @@ public class ViaggioDAO {
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            // Mapping viaggio -> database
             stmt.setString(1, viaggio.getId());
             stmt.setString(2, viaggio.getTreno().getCodice());
             stmt.setString(3, viaggio.getTreno().getTipoTreno().name());
@@ -373,7 +372,7 @@ public class ViaggioDAO {
             int postiTotali = rs.getInt("posti_totali");
             int postiDisponibili = rs.getInt("posti_disponibili");
             StatoViaggio stato = StatoViaggio.valueOf(rs.getString("stato"));
-            String binarioStr = rs.getString("binario_partenza"); // "Binario 1", "Binario 2", etc.
+            String binarioStr = rs.getString("binario_partenza");
             int ritardoMinuti = rs.getInt("ritardo_minuti");
             String motivoCancellazione = rs.getString("motivo_cancellazione");
 
@@ -383,7 +382,7 @@ public class ViaggioDAO {
             Treno treno = trenoDirector.costruisciTrenoPerTipo(tipoTreno, codiceTreno);
 
             int numeroBinario = Integer.parseInt(binarioStr.replace("Binario ", ""));
-            Binario binario = Binario.values()[numeroBinario - 1]; // Binario 1 = index 0
+            Binario binario = Binario.values()[numeroBinario - 1];
 
             Viaggio viaggio = new Viaggio(
                     idDatabase, treno, tratta, dataViaggio,

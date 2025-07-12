@@ -1,4 +1,4 @@
-package it.trenical.common.stazioni;
+package it.trenical.server.stazioni;
 
 import java.util.List;
 

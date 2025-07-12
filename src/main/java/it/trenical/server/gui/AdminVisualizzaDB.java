@@ -1,8 +1,8 @@
 package it.trenical.server.gui;
 
-import it.trenical.common.cliente.Cliente;
+import it.trenical.server.cliente.Cliente;
 import it.trenical.server.promozioni.Promozione;
-import it.trenical.common.stazioni.Stazione;
+import it.trenical.server.stazioni.Stazione;
 import it.trenical.server.viaggi.Viaggio;
 import it.trenical.server.db.dao.*;
 

@@ -1,8 +1,8 @@
-package it.trenical.common.cliente;
+package it.trenical.server.cliente;
 
 import it.trenical.server.viaggi.Viaggio;
-import it.trenical.common.stazioni.Binario;
-import it.trenical.common.stazioni.Stazione;
+import it.trenical.server.stazioni.Binario;
+import it.trenical.server.stazioni.Stazione;
 import it.trenical.server.treni.TipoTreno;
 
 import java.time.LocalDate;

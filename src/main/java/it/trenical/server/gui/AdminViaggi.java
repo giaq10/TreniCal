@@ -1,8 +1,8 @@
 package it.trenical.server.gui;
 
-import it.trenical.common.cliente.Cliente;
-import it.trenical.common.observer.Notifica;
-import it.trenical.common.observer.TipoNotifica;
+import it.trenical.server.cliente.Cliente;
+import it.trenical.server.observer.Notifica;
+import it.trenical.server.observer.TipoNotifica;
 import it.trenical.server.db.dao.BigliettoDAO;
 import it.trenical.server.db.dao.ClienteDAO;
 import it.trenical.server.grpc.TrenicalServiceImpl;
@@ -203,7 +203,7 @@ public class AdminViaggi {
             String notifica = notificheDaInviare.get(i);
             if (notifica.contains(email)) {
                 notificheDaInviare.remove(i);
-                return notifica.substring(email.length() + 1); // Rimuovi "email|"
+                return notifica.substring(email.length() + 1);
             }
         }
         return null;

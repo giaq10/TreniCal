@@ -1,7 +1,7 @@
-package it.trenical.common.cliente;
+package it.trenical.server.cliente;
 
-import it.trenical.common.observer.Notifica;
-import it.trenical.common.observer.Observer;
+import it.trenical.server.observer.Notifica;
+import it.trenical.server.observer.Observer;
 import it.trenical.server.gui.AdminViaggi;
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package it.trenical.common.observer;
+package it.trenical.server.observer;
 
 public interface Observer {
 

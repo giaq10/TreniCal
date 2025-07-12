@@ -1,6 +1,6 @@
 package it.trenical.server.gui;
 
-import it.trenical.common.stazioni.Stazione;
+import it.trenical.server.stazioni.Stazione;
 import it.trenical.server.db.dao.*;
 import javafx.application.Application;
 import javafx.geometry.*;
@@ -469,7 +469,7 @@ public class ServerAdminApp extends Application {
 
         DatePicker dataPicker = new DatePicker();
         dataPicker.setPromptText("Seleziona Data Viaggio");
-        dataPicker.setValue(LocalDate.now()); // Default: oggi
+        dataPicker.setValue(LocalDate.now());
 
         HBox dataBox = new HBox(10);
         dataBox.getChildren().addAll(

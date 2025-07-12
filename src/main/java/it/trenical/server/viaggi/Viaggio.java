@@ -1,13 +1,12 @@
 package it.trenical.server.viaggi;
 
-import it.trenical.common.observer.Notifica;
-import it.trenical.common.observer.Observer;
-import it.trenical.common.observer.TipoNotifica;
+import it.trenical.server.observer.Notifica;
+import it.trenical.server.observer.Observer;
 import it.trenical.server.promozioni.Promozione;
-import it.trenical.common.observer.Subject;
+import it.trenical.server.observer.Subject;
 import it.trenical.server.tratte.Tratta;
 import it.trenical.server.treni.Treno;
-import it.trenical.common.stazioni.Binario;
+import it.trenical.server.stazioni.Binario;
 import it.trenical.server.viaggi.strategy.CalcoloViaggioStrategy;
 import it.trenical.server.viaggi.strategy.StrategyFactory;
 

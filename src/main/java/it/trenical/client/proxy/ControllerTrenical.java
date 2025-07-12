@@ -283,11 +283,11 @@ public class ControllerTrenical {
 
         } catch (StatusRuntimeException e) {
             logger.warning("Errore gRPC controllo notifiche: " + e.getStatus());
-            return new RisultatoNotifichePendenti(false, "");
+            return new RisultatoNotifichePendenti(false, "ferma polling");
 
         } catch (Exception e) {
             logger.severe("Errore controllo notifiche: " + e.getMessage());
-            return new RisultatoNotifichePendenti(false, "");
+            return new RisultatoNotifichePendenti(false, "ferma polling");
         }
     }
 
@@ -407,7 +407,7 @@ public class ControllerTrenical {
         private final boolean successo;
         private final String messaggio;
         private final int postiRimanenti;
-        private final List<CarrelloItem> carrelloItems;  // Cambiato da BigliettoCarrelloDTO
+        private final List<CarrelloItem> carrelloItems;
 
         public RisultatoCarrello(boolean successo, String messaggio, int postiRimanenti,
                                  List<CarrelloItem> carrelloItems) {
@@ -420,7 +420,7 @@ public class ControllerTrenical {
         public boolean isSuccesso() { return successo; }
         public String getMessaggio() { return messaggio; }
         public int getPostiRimanenti() { return postiRimanenti; }
-        public List<CarrelloItem> getCarrelloItems() { return carrelloItems; }  // Nuovo nome
+        public List<CarrelloItem> getCarrelloItems() { return carrelloItems; }
     }
 
     public static class RisultatoAcquisto {

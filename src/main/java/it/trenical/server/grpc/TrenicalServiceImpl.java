@@ -1,10 +1,10 @@
 package it.trenical.server.grpc;
 
 import io.grpc.stub.StreamObserver;
-import it.trenical.common.cliente.Biglietto;
-import it.trenical.common.cliente.Cliente;
+import it.trenical.server.cliente.Biglietto;
+import it.trenical.server.cliente.Cliente;
 import it.trenical.grpc.*;
-import it.trenical.common.stazioni.Stazione;
+import it.trenical.server.stazioni.Stazione;
 import it.trenical.server.db.dao.BigliettoDAO;
 import it.trenical.server.db.dao.ClienteDAO;
 import it.trenical.server.db.dao.PromozioneDAO;

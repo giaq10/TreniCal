@@ -1,6 +1,6 @@
 package it.trenical.server.db.dao;
 
-import it.trenical.common.cliente.Cliente;
+import it.trenical.server.cliente.Cliente;
 import it.trenical.server.db.DatabaseManager;
 
 import java.sql.*;
